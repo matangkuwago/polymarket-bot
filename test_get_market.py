@@ -9,17 +9,20 @@ current_market = datetime.now().replace(
     second=0, 
     microsecond=0)
 
-# get last 5 market information
+# get last 30 market information
 client = PolymarketClient()
 market_interval = 5 # 5 minutes
-for i in range(5):
+results = []
+for i in range(30):
     timestamp = int(current_market.timestamp())
     market = client.get_market(timestamp)
     et_aware_dt = current_market.astimezone(ZoneInfo('America/New_York'))
-    print("-----------------")
-    print(f"timestamp: {timestamp}")
-    print(f"et_aware_dt: {et_aware_dt}")
-    print(f"market: {market}")
-    print(market)
-
+    price_to_beat = f"{market.price_to_beat:.2f}" if market.price_to_beat is not None else ""
+    resolved = market.resolved
+    outcome = market.outcome
+    row = [et_aware_dt, price_to_beat, timestamp, resolved, outcome]
+    results.insert(0, row)
     current_market = current_market - timedelta(minutes=market_interval)
+
+for item in results:
+    print(f"{item[0]}, {item[1]}, {item[2]}, {item[3]}, {item[4]}")
