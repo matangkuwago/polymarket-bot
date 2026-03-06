@@ -39,6 +39,8 @@ class Config:
     MAX_DAILY_BETS: int = int(os.getenv("MAX_DAILY_BETS", "100"))
     MAX_DAILY_LOSS: float = float(os.getenv("MAX_DAILY_LOSS", "50"))
 
+    USDC_TICK_SIZE = 1_000_000
+
     # Timing
     ENTRY_SECONDS_BEFORE: int = int(os.getenv("ENTRY_SECONDS_BEFORE", "30"))
 
@@ -49,11 +51,6 @@ class Config:
     LOG_FILE: str = "bot.log"
     TRADES_FILE: str = "trades.json"
 
-    # Copytrade
-    DATA_API = "https://data-api.polymarket.com"
-    COPY_WALLETS: list[str] = [w.strip() for w in os.getenv("COPY_WALLETS", "").split(",") if w.strip()]
-    COPY_POLL_INTERVAL: int = int(os.getenv("COPY_POLL_INTERVAL", "5"))
-
     # WebSocket settings
     WS_CLOB_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
     WS_USER_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/user"
@@ -63,6 +60,10 @@ class Config:
     # REST client settings
     REST_TIMEOUT: float = float(os.getenv("REST_TIMEOUT", "3"))  # Faster timeout
     REST_RETRIES: int = int(os.getenv("REST_RETRIES", "2"))
+
+    # Trading client settings
+    SIGNATURE_TYPE: int = int(os.getenv("SIGNATURE_TYPE", "0"))  # 0=EOA/MetaMask, 1=Magic/proxy
+    FUNDER_ADDRESS: str = os.getenv("FUNDER_ADDRESS", "")  # Required for proxy wallets
 
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
