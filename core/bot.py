@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from core.config import Config
 from core.polymarket import PolymarketClient
 from core.trader import LiveTrader
+from core.utilities import Emailer
 
 
 class Polymarket5MinuteBot:
@@ -21,7 +22,7 @@ class Polymarket5MinuteBot:
 
     def _setup_logging(self):
         # 1. Create a custom logger
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(Config.LOGGER_NAME)
         self.logger.setLevel(Config.LOG_LEVEL)
 
         # 2. Define a format for the logs
@@ -138,17 +139,21 @@ class Polymarket5MinuteBot:
             predictions.append(prediction)
         return predictions
 
-    async def place_orders(self, predictions: dict, live_trading: bool = True):
-
-        trader = LiveTrader(logger=self.logger)
+    def _check_balance(self, trader: LiveTrader, predictions):
         usdc_balance = trader.get_usdc_balance()
 
-        order_budget = float(len(predictions)+1) * self.entry_price * self.order_size
+        order_budget = (len(predictions)+1) * self.entry_price * self.order_size
         self.logger.info(f"usdc_balance: {usdc_balance}, order_budget: {order_budget}.")
         if order_budget > usdc_balance:
             error_message = f"Not enough account balance to place orders!"
             self.logger.error(error_message)
+            Emailer.send_email(subject="Polymarket Bot: balance error", mail_content=error_message)
             raise RuntimeError(error_message)
+
+    async def place_orders(self, predictions: dict, live_trading: bool = True):
+
+        trader = LiveTrader(logger=self.logger)
+        self._check_balance(trader, predictions)
 
         client = PolymarketClient(market_slug_prefix=self.polymarket_slug_prefix)
         for timestamp, direction in predictions.items():

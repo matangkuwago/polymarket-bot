@@ -5,7 +5,6 @@ import json
 import os
 import time
 import logging
-import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import cast
@@ -73,32 +72,11 @@ class LiveTrader:
 
         self._market_cache = market_cache
         if logger is None:
-            self._setup_logging()
+            self.logger = logging.getLogger(Config.LOGGER_NAME)
         else:
             self.logger = logger
+
         self._init_client()
-
-    def _setup_logging(self):
-        # 1. Create a custom logger
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(Config.LOG_LEVEL)
-
-        # 2. Define a format for the logs
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-        # 3. Create a console handler (StreamHandler)
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(Config.LOG_LEVEL)
-        console_handler.setFormatter(formatter)
-
-        # 4. Create a file handler (FileHandler)
-        file_handler = logging.FileHandler(f'LiveTrader.log', mode='a')
-        file_handler.setLevel(Config.LOG_LEVEL)
-        file_handler.setFormatter(formatter)
-
-        # 5. Add the handlers to the logger
-        self.logger.addHandler(console_handler)
-        self.logger.addHandler(file_handler)
 
     def _init_client(self):
         """Initialize py-clob-client with wallet credentials."""

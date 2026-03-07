@@ -60,8 +60,16 @@ class Config:
 
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "DEBUG").upper()
+    LOGGER_NAME = "polymarket.bot"
 
     # Prediction settings
     MINIMUM_NUM_PRICE_HISTORY = 22 # minimum number of past prices needed to make a prediction
     NUM_PREDICTIONS = 5 # we predict 5 outcomes
     PREDICTION_API = os.getenv("PREDICTION_API", "")
+
+    # Email settings
+    EMAIL_RECEIVERS=os.getenv("EMAIL_RECEIVERS", "")
+    EMAIL_SENDER_ADDRESS=os.getenv("EMAIL_SENDER_ADDRESS", "")
+    EMAIL_SENDER_PASS=os.getenv("EMAIL_SENDER_PASS", "")
+    EMAIL_SMTP_SERVER=os.getenv("EMAIL_SMTP_SERVER", "")
+    EMAIL_SMTP_PORT=int(os.getenv("EMAIL_SMTP_PORT", 0))
