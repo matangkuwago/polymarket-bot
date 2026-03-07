@@ -2,12 +2,15 @@ import logging
 import sys
 from binance import AsyncClient
 from datetime import datetime, timedelta
-from core.polymarket import PolymarketClient
 from core.config import Config
+from core.polymarket import PolymarketClient
+from core.trader import LiveTrader
 
 
 class Polymarket5MinuteBot:
     market_timestamp_interval_seconds = 300
+    entry_price = 0.4
+    order_size = 5.0
 
     def __init__(self, polymarket_slug_prefix: str, binance_ticker: str):
         self.polymarket_slug_prefix = polymarket_slug_prefix
@@ -41,7 +44,8 @@ class Polymarket5MinuteBot:
     async def run(self):
         await self.load_binance_price_history()
         await self.load_polymarket_price_history()
-        await self.get_predictions()
+        predictions = await self.get_predictions()
+        await self.place_orders(predictions, live_trading=False)
 
     async def load_binance_price_history(self):
         index_timestamp = 0
@@ -107,7 +111,10 @@ class Polymarket5MinuteBot:
 
         predictions = {}
         timestamp_interval = 300
-        timestamp_range = range(last_market_timestamp+timestamp_interval, last_market_timestamp*num_predictions*timestamp_interval, timestamp_interval)
+        timestamp_range = range(
+            last_market_timestamp + timestamp_interval,
+            last_market_timestamp * num_predictions * timestamp_interval,
+            timestamp_interval)
         index_range = range(num_predictions)
         for i, timestamp in zip(index_range, timestamp_range):
             predictions[timestamp] = predicted_directions[i]
@@ -116,6 +123,8 @@ class Polymarket5MinuteBot:
         self.logger.info(f"last_market_timestamp: {last_market_timestamp}")
         self.logger.info(f"Predictions:")
         self.logger.info(", ".join([f"{key}: {value}" for key, value in predictions.items()]))
+
+        return predictions
 
     async def _get_predictions_from_api(self, prediction_input, num_predictions):
         # generate random predictions for now
@@ -128,3 +137,31 @@ class Polymarket5MinuteBot:
                 prediction = "down"
             predictions.append(prediction)
         return predictions
+
+    async def place_orders(self, predictions: dict, live_trading: bool = True):
+
+        trader = LiveTrader(logger=self.logger)
+        usdc_balance = trader.get_usdc_balance()
+
+        order_budget = float(len(predictions)+1) * self.entry_price * self.order_size
+        self.logger.info(f"usdc_balance: {usdc_balance}, order_budget: {order_budget}.")
+        if order_budget > usdc_balance:
+            error_message = f"Not enough account balance to place orders!"
+            self.logger.error(error_message)
+            raise RuntimeError(error_message)
+
+        client = PolymarketClient(market_slug_prefix=self.polymarket_slug_prefix)
+        for timestamp, direction in predictions.items():
+            market = client.get_market(timestamp)
+            if live_trading:
+                trader.place_limit_order(
+                    market=market,
+                    direction=direction,
+                    entry_price=self.entry_price,
+                    amount=self.order_size
+                )
+            self.logger.info(f"Order has been placed:")
+            self.logger.info(f"market: {market}")
+            self.logger.info(f"market: {direction}")
+            self.logger.info(f"entry_price: {self.entry_price}")
+            self.logger.info(f"amount: {self.order_size}")

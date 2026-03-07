@@ -4,6 +4,8 @@
 import json
 import os
 import time
+import logging
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import cast
@@ -56,7 +58,7 @@ class LiveTrader:
     # Minimum order size
     MIN_ORDER_SIZE = 5.0
 
-    def __init__(self, market_cache=None):
+    def __init__(self, market_cache=None, logger=None):
         """Initialize live trader.
 
         Args:
@@ -70,7 +72,33 @@ class LiveTrader:
             raise ValueError("FUNDER_ADDRESS required for proxy wallet (SIGNATURE_TYPE=1)")
 
         self._market_cache = market_cache
+        if logger is None:
+            self._setup_logging()
+        else:
+            self.logger = logger
         self._init_client()
+
+    def _setup_logging(self):
+        # 1. Create a custom logger
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(Config.LOG_LEVEL)
+
+        # 2. Define a format for the logs
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+        # 3. Create a console handler (StreamHandler)
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(Config.LOG_LEVEL)
+        console_handler.setFormatter(formatter)
+
+        # 4. Create a file handler (FileHandler)
+        file_handler = logging.FileHandler(f'LiveTrader.log', mode='a')
+        file_handler.setLevel(Config.LOG_LEVEL)
+        file_handler.setFormatter(formatter)
+
+        # 5. Add the handlers to the logger
+        self.logger.addHandler(console_handler)
+        self.logger.addHandler(file_handler)
 
     def _init_client(self):
         """Initialize py-clob-client with wallet credentials."""
@@ -80,7 +108,7 @@ class LiveTrader:
             if Config.SIGNATURE_TYPE == 1 or Config.SIGNATURE_TYPE == 2:
                 if not Config.FUNDER_ADDRESS:
                     raise ValueError("FUNDER_ADDRESS required when SIGNATURE_TYPE=1 or 2")
-                print(f"[trader] Using proxy wallet with funder: {Config.FUNDER_ADDRESS[:10]}...")
+                self.logger.info(f"[LiveTrader] Using proxy wallet with funder: {Config.FUNDER_ADDRESS[:10]}...")
                 self.client = ClobClient(
                     host=Config.CLOB_API,
                     key=Config.PRIVATE_KEY,
@@ -97,11 +125,10 @@ class LiveTrader:
 
             # Derive API credentials
             creds = self.client.create_or_derive_api_creds()
-            print(f"creds: {creds}")
             self.client.set_api_creds(creds)
 
             wallet_type = "EOA" if Config.SIGNATURE_TYPE == 0 else "proxy"
-            print(f"[trader] Live trading client initialized ({wallet_type} wallet)")
+            self.logger.info(f"[LiveTrader] Live trading client initialized ({wallet_type} wallet)")
 
         except ImportError:
             raise ImportError("py-clob-client not installed. Run: pip install py-clob-client")
@@ -182,7 +209,7 @@ class LiveTrader:
                     time.sleep(poll_interval)
 
             except Exception as e:
-                print(f"[trader] Error polling order {order_id}: {e}")
+                self.logger.info(f"[LiveTrader] Error polling order {order_id}: {e}")
                 time.sleep(poll_interval)
 
         # Timeout - return unknown status
@@ -223,7 +250,7 @@ class LiveTrader:
         # Validate order parameters
         is_valid, error_msg = self._validate_order(market, direction, entry_price, amount)
         if not is_valid:
-            print(f"[LIVE] Order rejected: {error_msg}")
+            self.logger.info(f"[LiveTrader] Order rejected: {error_msg}")
             return None
 
         token_id = market.up_token_id if direction == "up" else market.down_token_id
@@ -257,13 +284,13 @@ class LiveTrader:
             order_status = "submitted"
 
             # Log limit order
-            print(
-                f"[LIVE] Limit Order placed ${amount:.2f} on {direction.upper()} @ price {entry_price:.2f} "
+            self.logger.info(
+                f"[LiveTrader] Limit Order placed ${amount:.2f} on {direction.upper()} @ price {entry_price:.2f} "
                 f"| {market.title} | order={order_id} (GTC)"
             )
 
         except Exception as e:
-            print(f"[LIVE] Order failed: {e}")
+            self.logger.info(f"[LiveTrader] Order failed: {e}")
             order_id = f"FAILED:{e}"
             order_status = "failed"
 
