@@ -15,7 +15,7 @@ from .config import Config
 
 @dataclass
 class Market:
-    """A single 5-min BTC up/down market."""
+    """A single 5-min up/down market."""
 
     timestamp: int
     slug: str
@@ -42,7 +42,8 @@ class PolymarketClient:
     - Token ID caching for BTC 5-min markets
     """
 
-    def __init__(self, timeout: float | None = None, use_cache: bool = True):
+    def __init__(self, market_slug_prefix: str, timeout: float | None = None, use_cache: bool = True):
+        self.market_slug_prefix = market_slug_prefix
         self.gamma = Config.GAMMA_API
         self.clob = Config.CLOB_API
         self.timeout = timeout or Config.REST_TIMEOUT
@@ -104,7 +105,7 @@ class PolymarketClient:
                 return cached
             # Otherwise, market may have closed/resolved - fetch fresh data
 
-        slug = f"btc-updown-5m-{timestamp}"
+        slug = f"{self.market_slug_prefix}-{timestamp}"
         try:
             resp = self.session.get(f"{self.gamma}/events", params={"slug": slug}, timeout=self.timeout)
             resp.raise_for_status()

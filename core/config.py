@@ -24,22 +24,19 @@ LOCAL_TZ = timezone(_TZ_OFFSETS.get(TIMEZONE_NAME, timedelta(hours=7)))
 
 
 class Config:
-    # Wallet
-    PRIVATE_KEY: str = os.getenv("PRIVATE_KEY", "")
 
-    # Polymarket APIs
+    # Polymarket API settings
+    PRIVATE_KEY: str = os.getenv("PRIVATE_KEY", "")
+    SIGNATURE_TYPE: int = int(os.getenv("SIGNATURE_TYPE", "0"))  # 0=EOA/MetaMask, 1=Magic/proxy
+    FUNDER_ADDRESS: str = os.getenv("FUNDER_ADDRESS", "")  # Required for proxy wallets
     GAMMA_API = "https://gamma-api.polymarket.com"
     CLOB_API = "https://clob.polymarket.com"
     CHAIN_ID = 137  # Polygon mainnet
-
-    # Strategy
-    STREAK_TRIGGER: int = int(os.getenv("STREAK_TRIGGER", "4"))
-    BET_AMOUNT: float = float(os.getenv("BET_AMOUNT", "5"))
-    MIN_BET: float = float(os.getenv("MIN_BET", "1"))
-    MAX_DAILY_BETS: int = int(os.getenv("MAX_DAILY_BETS", "100"))
-    MAX_DAILY_LOSS: float = float(os.getenv("MAX_DAILY_LOSS", "50"))
-
     USDC_TICK_SIZE = 1_000_000
+
+    # Binance API settings
+    BINANCE_API_KEY: str = os.getenv("BINANCE_API_KEY", "")
+    BINANCE_SECRET_KEY: str = os.getenv("BINANCE_SECRET_KEY", "")
 
     # Timing
     ENTRY_SECONDS_BEFORE: int = int(os.getenv("ENTRY_SECONDS_BEFORE", "30"))
@@ -61,9 +58,10 @@ class Config:
     REST_TIMEOUT: float = float(os.getenv("REST_TIMEOUT", "3"))  # Faster timeout
     REST_RETRIES: int = int(os.getenv("REST_RETRIES", "2"))
 
-    # Trading client settings
-    SIGNATURE_TYPE: int = int(os.getenv("SIGNATURE_TYPE", "0"))  # 0=EOA/MetaMask, 1=Magic/proxy
-    FUNDER_ADDRESS: str = os.getenv("FUNDER_ADDRESS", "")  # Required for proxy wallets
-
     # Logging
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "DEBUG").upper()
+
+    # Prediction settings
+    MINIMUM_NUM_PRICE_HISTORY = 22 # minimum number of past prices needed to make a prediction
+    NUM_PREDICTIONS = 5 # we predict 5 outcomes
+    PREDICTION_API = os.getenv("PREDICTION_API", "")
