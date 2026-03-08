@@ -27,8 +27,10 @@ class Config:
 
     # Polymarket API settings
     PRIVATE_KEY: str = os.getenv("PRIVATE_KEY", "")
-    SIGNATURE_TYPE: int = int(os.getenv("SIGNATURE_TYPE", "0"))  # 0=EOA/MetaMask, 1=Magic/proxy
-    FUNDER_ADDRESS: str = os.getenv("FUNDER_ADDRESS", "")  # Required for proxy wallets
+    # 0=EOA/MetaMask, 1=Magic/proxy
+    SIGNATURE_TYPE: int = int(os.getenv("SIGNATURE_TYPE", "0"))
+    FUNDER_ADDRESS: str = os.getenv(
+        "FUNDER_ADDRESS", "")  # Required for proxy wallets
     GAMMA_API = "https://gamma-api.polymarket.com"
     CLOB_API = "https://clob.polymarket.com"
     CHAIN_ID = 137  # Polygon mainnet
@@ -55,7 +57,8 @@ class Config:
     USE_WEBSOCKET: bool = os.getenv("USE_WEBSOCKET", "true").lower() == "true"
 
     # REST client settings
-    REST_TIMEOUT: float = float(os.getenv("REST_TIMEOUT", "3"))  # Faster timeout
+    REST_TIMEOUT: float = float(
+        os.getenv("REST_TIMEOUT", "3"))  # Faster timeout
     REST_RETRIES: int = int(os.getenv("REST_RETRIES", "2"))
 
     # Logging
@@ -63,13 +66,19 @@ class Config:
     LOGGER_NAME = "polymarket.bot"
 
     # Prediction settings
-    MINIMUM_NUM_PRICE_HISTORY = 22 # minimum number of past prices needed to make a prediction
-    NUM_PREDICTIONS = 5 # we predict 5 outcomes
-    PREDICTION_API = os.getenv("PREDICTION_API", "")
+    MINIMUM_NUM_PRICE_HISTORY: int = 23  # past prices needed to make a prediction
+    NUM_PREDICTIONS = 5  # we predict 5 outcomes
+    PREDICTION_API_ENDPOINT = os.getenv("PREDICTION_API_ENDPOINT", "")
+    PREDICTION_API_RESULTS_ENDPOINT = os.getenv(
+        "PREDICTION_API_RESULTS_ENDPOINT", "")
+    PREDICTION_API_WAITING_STATUS_CODE: int = os.getenv(
+        "PREDICTION_API_WAITING_STATUS_CODE", 418)
+    PREDICTION_API_TOKEN = os.getenv("PREDICTION_API_TOKEN", "")
+    PREDICTION_API_MAX_POLL: int = os.getenv("PREDICTION_API_MAX_POLL", 120)
 
     # Email settings
-    EMAIL_RECEIVERS=os.getenv("EMAIL_RECEIVERS", "")
-    EMAIL_SENDER_ADDRESS=os.getenv("EMAIL_SENDER_ADDRESS", "")
-    EMAIL_SENDER_PASS=os.getenv("EMAIL_SENDER_PASS", "")
-    EMAIL_SMTP_SERVER=os.getenv("EMAIL_SMTP_SERVER", "")
-    EMAIL_SMTP_PORT=int(os.getenv("EMAIL_SMTP_PORT", 0))
+    EMAIL_RECEIVERS = os.getenv("EMAIL_RECEIVERS", "")
+    EMAIL_SENDER_ADDRESS = os.getenv("EMAIL_SENDER_ADDRESS", "")
+    EMAIL_SENDER_PASS = os.getenv("EMAIL_SENDER_PASS", "")
+    EMAIL_SMTP_SERVER = os.getenv("EMAIL_SMTP_SERVER", "")
+    EMAIL_SMTP_PORT = int(os.getenv("EMAIL_SMTP_PORT", 0))
