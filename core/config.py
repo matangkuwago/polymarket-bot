@@ -52,7 +52,7 @@ class Config:
 
     # Trade settings
     TRADE_RECORDS_DIR: str = "trades"
-    TRADE_ENTRY_PRICE: float = float(os.getenv("TRADE_ENTRY_PRICE", 0.4))
+    TRADE_ENTRY_PRICE: float = float(os.getenv("TRADE_ENTRY_PRICE", 0.5))
     TRADE_ORDER_SIZE: float = float(os.getenv("TRADE_ORDER_SIZE", 5.0))
 
     # WebSocket settings
