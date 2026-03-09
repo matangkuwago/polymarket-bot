@@ -47,8 +47,13 @@ class Config:
     PAPER_TRADE: bool = os.getenv("PAPER_TRADE", "true").lower() == "true"
 
     # Logging
-    LOG_FILE: str = "bot.log"
-    TRADES_FILE: str = "trades.json"
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "DEBUG").upper()
+    LOGGER_NAME = "polymarket.bot"
+
+    # Trade settings
+    TRADE_RECORDS_DIR: str = "trades"
+    TRADE_ENTRY_PRICE: float = float(os.getenv("TRADE_ENTRY_PRICE", 0.4))
+    TRADE_ORDER_SIZE: float = float(os.getenv("TRADE_ORDER_SIZE", 5.0))
 
     # WebSocket settings
     WS_CLOB_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
@@ -60,10 +65,6 @@ class Config:
     REST_TIMEOUT: float = float(
         os.getenv("REST_TIMEOUT", "3"))  # Faster timeout
     REST_RETRIES: int = int(os.getenv("REST_RETRIES", "2"))
-
-    # Logging
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "DEBUG").upper()
-    LOGGER_NAME = "polymarket.bot"
 
     # Prediction settings
     MINIMUM_NUM_PRICE_HISTORY: int = 23  # past prices needed to make a prediction
@@ -77,8 +78,8 @@ class Config:
     PREDICTION_API_MAX_POLL: int = os.getenv("PREDICTION_API_MAX_POLL", 120)
 
     # Email settings
-    EMAIL_RECEIVERS = os.getenv("EMAIL_RECEIVERS", "")
-    EMAIL_SENDER_ADDRESS = os.getenv("EMAIL_SENDER_ADDRESS", "")
-    EMAIL_SENDER_PASS = os.getenv("EMAIL_SENDER_PASS", "")
-    EMAIL_SMTP_SERVER = os.getenv("EMAIL_SMTP_SERVER", "")
-    EMAIL_SMTP_PORT = int(os.getenv("EMAIL_SMTP_PORT", 0))
+    EMAIL_RECEIVERS: str = os.getenv("EMAIL_RECEIVERS", "")
+    EMAIL_SENDER_ADDRESS: str = os.getenv("EMAIL_SENDER_ADDRESS", "")
+    EMAIL_SENDER_PASS: str = os.getenv("EMAIL_SENDER_PASS", "")
+    EMAIL_SMTP_SERVER: str = os.getenv("EMAIL_SMTP_SERVER", "")
+    EMAIL_SMTP_PORT: int = int(os.getenv("EMAIL_SMTP_PORT", 0))

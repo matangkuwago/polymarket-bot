@@ -1,5 +1,6 @@
 import logging
 import smtplib
+from os.path import basename
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -40,13 +41,15 @@ class Emailer:
                     Name=basename(f)
                 )
             # After the file is closed
-            part['Content-Disposition'] = 'attachment; filename="%s"' % basename(f)
+            part['Content-Disposition'] = 'attachment; filename="%s"' % basename(
+                f)
             message.attach(part)
 
         # Create SMTP session for sending the mail
         session = smtplib.SMTP(smtp_server, smtp_port)
         session.starttls()  # enable security
-        session.login(sender_address, sender_pass)  # login with mail_id and password
+        # login with mail_id and password
+        session.login(sender_address, sender_pass)
         text = message.as_string()
         session.sendmail(sender_address, receiver_address, text)
         session.quit()

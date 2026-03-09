@@ -5,11 +5,12 @@ import json
 import os
 import time
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import cast
 from core.config import LOCAL_TZ, TIMEZONE_NAME, Config
 from core.polymarket import Market, PolymarketClient
+from core.utilities import Emailer
 from py_clob_client.clob_types import OrderArgs, OrderType, BalanceAllowanceParams, AssetType
 from py_clob_client.order_builder.constants import BUY
 
@@ -19,19 +20,19 @@ class Trade:
     """Record of a trade (paper or live) with full history."""
 
     # === CORE FIELDS ===
+    order_id: str  # Order ID from exchange (live) or random str (paper trade)
     timestamp: int  # market timestamp (unix seconds)
     market_slug: str  # e.g., "btc-updown-5m-1771051500"
     direction: str  # "up" or "down" - your bet direction
     amount: float  # your bet size in USD (after any partial fill)
     entry_price: float  # displayed market price when you decided to bet
-    paper: bool  # True = simulation, False = live trade
+    paper_trade: bool  # True = simulation, False = live trade
     executed_at: int | None = None  # when you placed your bet (unix ms)
     fee_rate_bps: int = 0  # base fee in basis points (e.g., 1000)
     fee_pct: float = 0.0  # actual fee percentage at execution price
 
     # === RESOLUTION FIELDS ===
     outcome: str | None = None  # "up" or "down" after market closes
-    order_id: str | None = None  # order ID from exchange (live only)
     pnl: float = 0.0  # net profit/loss after fees
     settled_at: int | None = None  # when trade was settled (unix ms)
     won: bool | None = None  # True if direction == outcome
@@ -41,7 +42,45 @@ class Trade:
 
     # Settlement status tracking
     settlement_status: str = "pending"  # "pending", "settled", or "force_exit"
-    force_exit_reason: str | None = None  # "insufficient_bankroll" or "shutdown" (only when force_exit)
+    # "insufficient_bankroll" or "shutdown" (only when force_exit)
+    force_exit_reason: str | None = None
+
+    def save(self):
+        os.makedirs(Config.TRADE_RECORDS_DIR, exist_ok=True)
+        filepath = f"{Config.TRADE_RECORDS_DIR}/{self.timestamp}.trade"
+        """Saves the dataclass instance to a JSON file."""
+        # Use asdict() to convert the dataclass instance to a dictionary
+        data = asdict(self)
+        try:
+            with open(filepath, 'w') as f:
+                json.dump(data, f, indent=4)
+
+            logger = logging.getLogger(Config.LOGGER_NAME)
+            logger.info(
+                f"Order for market {self.timestamp} successfully saved to {filepath}.")
+        except IOError as e:
+            logger.error(
+                f"Error saving order for market {self.timestamp} to {filepath}.: {e}")
+
+    @classmethod
+    def load(cls, timestamp: str):
+        """Loads a dataclass instance from a JSON file."""
+        filepath = f"{Config.TRADE_RECORDS_DIR}/{timestamp}.trade"
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+            # Unpack the dictionary to create a new instance of the class
+            return cls(**data)
+        except FileNotFoundError:
+            logger = logging.getLogger(Config.LOGGER_NAME)
+            logger.info(
+                f"Error: Order for market {timestamp} file not found at {filepath}!")
+            return None
+        except json.JSONDecodeError:
+            logger = logging.getLogger(Config.LOGGER_NAME)
+            logger.error(
+                f"Error decoding Order for market {timestamp} from file at {filepath}!")
+            return None
 
 
 class LiveTrader:
@@ -68,7 +107,8 @@ class LiveTrader:
 
         # Validate proxy wallet config
         if Config.SIGNATURE_TYPE == 1 and not Config.FUNDER_ADDRESS:
-            raise ValueError("FUNDER_ADDRESS required for proxy wallet (SIGNATURE_TYPE=1)")
+            raise ValueError(
+                "FUNDER_ADDRESS required for proxy wallet (SIGNATURE_TYPE=1)")
 
         self._market_cache = market_cache
         if logger is None:
@@ -85,8 +125,10 @@ class LiveTrader:
 
             if Config.SIGNATURE_TYPE == 1 or Config.SIGNATURE_TYPE == 2:
                 if not Config.FUNDER_ADDRESS:
-                    raise ValueError("FUNDER_ADDRESS required when SIGNATURE_TYPE=1 or 2")
-                self.logger.info(f"[LiveTrader] Using proxy wallet with funder: {Config.FUNDER_ADDRESS[:10]}...")
+                    raise ValueError(
+                        "FUNDER_ADDRESS required when SIGNATURE_TYPE=1 or 2")
+                self.logger.info(
+                    f"[LiveTrader] Using proxy wallet with funder: {Config.FUNDER_ADDRESS[:10]}...")
                 self.client = ClobClient(
                     host=Config.CLOB_API,
                     key=Config.PRIVATE_KEY,
@@ -106,10 +148,12 @@ class LiveTrader:
             self.client.set_api_creds(creds)
 
             wallet_type = "EOA" if Config.SIGNATURE_TYPE == 0 else "proxy"
-            self.logger.info(f"[LiveTrader] Live trading client initialized ({wallet_type} wallet)")
+            self.logger.info(
+                f"[LiveTrader] Live trading client initialized ({wallet_type} wallet)")
 
         except ImportError:
-            raise ImportError("py-clob-client not installed. Run: pip install py-clob-client")
+            raise ImportError(
+                "py-clob-client not installed. Run: pip install py-clob-client")
         except Exception as e:
             raise RuntimeError(f"Failed to init trading client: {e}")
 
@@ -187,7 +231,8 @@ class LiveTrader:
                     time.sleep(poll_interval)
 
             except Exception as e:
-                self.logger.info(f"[LiveTrader] Error polling order {order_id}: {e}")
+                self.logger.info(
+                    f"[LiveTrader] Error polling order {order_id}: {e}")
                 time.sleep(poll_interval)
 
         # Timeout - return unknown status
@@ -201,7 +246,8 @@ class LiveTrader:
     def get_usdc_balance(self):
         balance = 0
         collateral = self.client.get_balance_allowance(
-            params=BalanceAllowanceParams(asset_type=AssetType.COLLATERAL, signature_type=Config.SIGNATURE_TYPE)
+            params=BalanceAllowanceParams(
+                asset_type=AssetType.COLLATERAL, signature_type=Config.SIGNATURE_TYPE)
         )
 
         if collateral and 'balance' in collateral:
@@ -209,14 +255,13 @@ class LiveTrader:
 
         return balance
 
-
-
     def place_limit_order(
         self,
         market: Market,
         direction: str,
         entry_price: float,
-        amount: float
+        amount: float,
+        paper_trade: bool
     ) -> Trade | None:
         """Place a live bet using FOK (Fill-Or-Kill) market order.
 
@@ -226,7 +271,8 @@ class LiveTrader:
         Returns None if order is rejected (validation failed, market closed, etc.)
         """
         # Validate order parameters
-        is_valid, error_msg = self._validate_order(market, direction, entry_price, amount)
+        is_valid, error_msg = self._validate_order(
+            market, direction, entry_price, amount)
         if not is_valid:
             self.logger.info(f"[LiveTrader] Order rejected: {error_msg}")
             return None
@@ -236,10 +282,10 @@ class LiveTrader:
         executed_at = int(time.time() * 1000)  # milliseconds
         order_id = None
         order_status = "pending"
-        execution_price = entry_price
 
         # Get fee rate from market
-        fee_rate_bps = market.taker_fee_bps if hasattr(market, "taker_fee_bps") else 1000
+        fee_rate_bps = market.taker_fee_bps if hasattr(
+            market, "taker_fee_bps") else 1000
         fee_pct = PolymarketClient.calculate_fee(entry_price, fee_rate_bps)
 
         try:
@@ -256,14 +302,24 @@ class LiveTrader:
 
             # Sign and submit the order
             signed_order = self.client.create_order(market_order)
-            response = self.client.post_order(signed_order, OrderType.GTC)
+            if paper_trade:
+                order_id = os.urandom(15).hex()
+            else:
+                response = self.client.post_order(signed_order, OrderType.GTC)
+                order_id = response.get(
+                    "orderID", response.get("id", "unknown"))
 
-            order_id = response.get("orderID", response.get("id", "unknown"))
+                # send notification
+                subject = f"polymarket_bot: Order created successfully for market {market.timestamp}"
+                mail_content = f"Order ID: {order_id}: https://polymarket.com/event/btc-updown-5m-{market.timestamp}"
+                Emailer.send_email(subject=subject, mail_content=mail_content)
+
             order_status = "submitted"
 
             # Log limit order
+            paper_trade_text = "[PAPER TRADE]" if paper_trade else ""
             self.logger.info(
-                f"[LiveTrader] Limit Order placed ${amount:.2f} on {direction.upper()} @ price {entry_price:.2f} "
+                f"[LiveTrader]{paper_trade_text} Limit Order placed ${amount:.2f} on {direction.upper()} @ price {entry_price:.2f} "
                 f"| {market.title} | order={order_id} (GTC)"
             )
 
@@ -279,8 +335,9 @@ class LiveTrader:
             direction=direction,
             amount=amount,
             entry_price=entry_price,
-            paper=False,
+            paper_trade=paper_trade,
             executed_at=executed_at,
             fee_rate_bps=fee_rate_bps,
             fee_pct=fee_pct,
+            order_status=order_status,
         )

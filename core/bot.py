@@ -14,8 +14,8 @@ from core.utilities import Emailer
 
 class Polymarket5MinuteBot:
     market_timestamp_interval_seconds = 300
-    entry_price = 0.4
-    order_size = 5.0
+    entry_price = Config.TRADE_ENTRY_PRICE
+    order_size = Config.TRADE_ORDER_SIZE
 
     def __init__(self, polymarket_slug_prefix: str, binance_ticker: str):
         self.polymarket_slug_prefix = polymarket_slug_prefix
@@ -50,12 +50,18 @@ class Polymarket5MinuteBot:
 
     async def run(self):
         start_time = time.time()
+        start_log_message = f"Start time: {start_time}."
+        Emailer.send_email(
+            subject=f"polymarket_bot run started", mail_content=start_log_message)
         await self.load_binance_price_history()
         await self.load_polymarket_price_history()
         predictions = await self.get_predictions()
-        await self.place_orders(predictions, live_trading=False)
+        await self.place_orders(predictions, paper_trade=Config.PAPER_TRADE)
         end_time = time.time()
-        print(f"Total execution time: {end_time - start_time} seconds")
+        end_log_message = f"Total execution time: {end_time - start_time} seconds."
+        self.logger.info(end_log_message)
+        Emailer.send_email(
+            subject=f"polymarket_bot run ended", mail_content=end_log_message)
 
     async def load_binance_price_history(self):
         index_timestamp = 0
@@ -94,6 +100,7 @@ class Polymarket5MinuteBot:
         for i in range(num_markets_to_fetch):
             timestamp = int(current_market.timestamp())
             market = client.get_market(timestamp)
+            self.logger.info(f"market for {timestamp}: {market}")
             price_to_beat_raw = market.price_to_beat
             if price_to_beat_raw is None:
                 source = "binance"
@@ -151,7 +158,7 @@ class Polymarket5MinuteBot:
             error_message = f"Unable to send prediction request. Status code is {status_code}, message is {response_text}"
             self.logger.error(error_message)
             Emailer.send_email(
-                subject="Polymarket Bot: Prediction API error", mail_content=error_message)
+                subject="polymarket_bot: Prediction API error", mail_content=error_message)
             return error_message
 
         predictions = []
@@ -163,6 +170,7 @@ class Polymarket5MinuteBot:
         data = {"price_history": prediction_input}
         # send prediction request
         response = requests.post(predict_url, json=data, headers=headers)
+        status_code = 404
         if response and response.status_code:
             status_code = response.status_code
         if status_code == 202 and response.content:
@@ -193,7 +201,7 @@ class Polymarket5MinuteBot:
             error_message = f"Unable to get prediction results after {Config.PREDICTION_API_MAX_POLL} tries."
             self.logger.error(error_message)
             Emailer.send_email(
-                subject="Polymarket Bot: Prediction API error", mail_content=error_message)
+                subject="polymarket_bot: Prediction API error", mail_content=error_message)
             raise RuntimeError(error_message)
 
         return predictions
@@ -209,10 +217,10 @@ class Polymarket5MinuteBot:
             error_message = f"Not enough account balance to place orders!"
             self.logger.error(error_message)
             Emailer.send_email(
-                subject="Polymarket Bot: balance error", mail_content=error_message)
+                subject="polymarket_bot: balance error", mail_content=error_message)
             raise RuntimeError(error_message)
 
-    async def place_orders(self, predictions: dict, live_trading: bool = True):
+    async def place_orders(self, predictions: dict, paper_trade: bool = True):
 
         trader = LiveTrader(logger=self.logger)
         self._check_balance(trader, predictions)
@@ -221,13 +229,14 @@ class Polymarket5MinuteBot:
             market_slug_prefix=self.polymarket_slug_prefix)
         for timestamp, direction in predictions.items():
             market = client.get_market(timestamp)
-            if live_trading:
-                trader.place_limit_order(
-                    market=market,
-                    direction=direction,
-                    entry_price=self.entry_price,
-                    amount=self.order_size
-                )
+            trade = trader.place_limit_order(
+                market=market,
+                direction=direction,
+                entry_price=self.entry_price,
+                amount=self.order_size,
+                paper_trade=paper_trade
+            )
+            trade.save()
             self.logger.info(f"Order has been placed:")
             self.logger.info(f"market: {market}")
             self.logger.info(f"market: {direction}")
