@@ -2,7 +2,7 @@
 
 while true; do
     ./run_bot.sh
-    for (( i=1300; i>0; i-- )); do
+    for (( i=1500; i>0; i-- )); do
         seconds="seconds"
         if [[ "$i" -eq 1 ]]; then
             seconds="second"
