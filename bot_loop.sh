@@ -2,5 +2,5 @@
 
 while true; do
     ./run_bot.sh
-    sleep 1400
+    sleep 1300
 done
