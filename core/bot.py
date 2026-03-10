@@ -79,10 +79,6 @@ class Polymarket5MinuteBot:
 
         await client.close_connection()
 
-        current_market = datetime.now().replace(
-            minute=(datetime.now().minute - (datetime.now().minute % 5)),
-            second=0,
-            microsecond=0)
         self.logger.info(
             f"price_history_binance: {self.price_history_binance}")
 
