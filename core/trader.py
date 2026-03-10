@@ -310,8 +310,10 @@ class LiveTrader:
                     "orderID", response.get("id", "unknown"))
 
                 # send notification
+                usdc_balance = self.get_usdc_balance()
                 subject = f"polymarket_bot: Order created successfully for market {market.timestamp}"
                 mail_content = f"Order ID: {order_id}: https://polymarket.com/event/btc-updown-5m-{market.timestamp}"
+                mail_content += f"\nBalance: {usdc_balance}"
                 Emailer.send_email(subject=subject, mail_content=mail_content)
 
             order_status = "submitted"
