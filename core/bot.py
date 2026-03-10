@@ -205,12 +205,12 @@ class Polymarket5MinuteBot:
     def _check_balance(self, trader: LiveTrader, predictions):
         usdc_balance = trader.get_usdc_balance()
 
-        order_budget = (len(predictions)+1) * \
+        order_budget = len(predictions) * \
             self.entry_price * self.order_size
         self.logger.info(
             f"usdc_balance: {usdc_balance}, order_budget: {order_budget}.")
         if order_budget > usdc_balance:
-            error_message = f"Not enough account balance to place orders!"
+            error_message = f"Not enough account balance to place orders! usdc_balance: {usdc_balance}, order_budget: {order_budget}."
             self.logger.error(error_message)
             Emailer.send_email(
                 subject="polymarket_bot: balance error", mail_content=error_message)
