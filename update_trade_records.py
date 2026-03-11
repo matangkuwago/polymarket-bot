@@ -72,7 +72,10 @@ def main():
                 f"trade.won: {trade.won}\n"
                 f"{order_email_text}"
             )
-            Emailer.send_email(subject=subject, mail_content=mail_content)
+
+            if order and order['status'] != "CANCELED":
+                Emailer.send_email(subject=subject, mail_content=mail_content)
+
             print(subject)
             print(mail_content)
 
