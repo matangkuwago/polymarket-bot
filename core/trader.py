@@ -255,6 +255,9 @@ class LiveTrader:
 
         return balance
 
+    def get_order(self, order_id: str):
+        return self.client.get_order(order_id)
+
     def place_limit_order(
         self,
         market: Market,
@@ -298,6 +301,7 @@ class LiveTrader:
                 price=entry_price,
                 size=amount,
                 side=BUY,
+                expiration=(market.timestamp+Config.TRADE_ORDER_EXPIRATION)
             )
 
             # Sign and submit the order
@@ -305,7 +309,7 @@ class LiveTrader:
             if paper_trade:
                 order_id = os.urandom(15).hex()
             else:
-                response = self.client.post_order(signed_order, OrderType.GTC)
+                response = self.client.post_order(signed_order, OrderType.GTD)
                 order_id = response.get(
                     "orderID", response.get("id", "unknown"))
 
