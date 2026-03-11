@@ -2,12 +2,9 @@
 
 while true; do
     ./run_bot.sh
-    for (( i=1500; i>0; i-- )); do
-        seconds="seconds"
-        if [[ "$i" -eq 1 ]]; then
-            seconds="second"
-        fi
-        echo "$i $seconds remaining till the next run."
+    for (( seconds=1500; seconds>0; seconds-- )); do
+        minutes=$(echo "scale=2; $seconds/60" | bc)
+        echo "$minutes minute(s) remaining till the next run."
         sleep 1
     done
 done
