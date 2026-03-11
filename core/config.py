@@ -52,8 +52,10 @@ class Config:
 
     # Trade settings
     TRADE_RECORDS_DIR: str = "trades"
+    TRADE_RECORDS_PROCESSED_DIR: str = "trades_processed"
     TRADE_ENTRY_PRICE: float = float(os.getenv("TRADE_ENTRY_PRICE", 0.5))
     TRADE_ORDER_SIZE: float = float(os.getenv("TRADE_ORDER_SIZE", 5.0))
+    TRADE_ORDER_EXPIRATION: int = int(os.getenv("TRADE_ORDER_EXPIRATION", 150))
 
     # WebSocket settings
     WS_CLOB_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
