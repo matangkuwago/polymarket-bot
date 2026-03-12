@@ -39,7 +39,7 @@ class PolymarketClient:
     Features:
     - Connection pooling for better performance
     - Configurable timeouts and retries
-    - Token ID caching for BTC 5-min markets
+    - Token ID caching for 5-min markets
     """
 
     def __init__(self, market_slug_prefix: str, timeout: float | None = None, use_cache: bool = True):
@@ -75,14 +75,14 @@ class PolymarketClient:
             }
         )
 
-        # Token ID cache for BTC 5-min markets: timestamp -> (up_token, down_token)
+        # Token ID cache for 5-min markets: timestamp -> (up_token, down_token)
         self._token_cache: dict[int, tuple[str | None, str | None]] = {}
         self._market_cache: dict[int, Market] = {}
         self._cache_ttl = 300  # 5 minutes
         self._use_cache = use_cache
 
     def get_market(self, timestamp: int, use_cache: bool = True) -> Market | None:
-        """Fetch a BTC 5-min market by its timestamp.
+        """Fetch a 5-min market by its timestamp.
 
         Args:
             timestamp: Unix timestamp of the market
@@ -107,7 +107,8 @@ class PolymarketClient:
 
         slug = f"{self.market_slug_prefix}-{timestamp}"
         try:
-            resp = self.session.get(f"{self.gamma}/events", params={"slug": slug}, timeout=self.timeout)
+            resp = self.session.get(
+                f"{self.gamma}/events", params={"slug": slug}, timeout=self.timeout)
             resp.raise_for_status()
             data = resp.json()
             if not data:
@@ -116,7 +117,8 @@ class PolymarketClient:
             event = data[0]
             markets = event.get("markets", [])
             event_metadata = event.get("eventMetadata", {})
-            price_to_beat = None if 'priceToBeat' not in event_metadata else event_metadata['priceToBeat']
+            price_to_beat = None if 'priceToBeat' not in event_metadata else event_metadata[
+                'priceToBeat']
             if not markets:
                 return None
 
@@ -156,7 +158,8 @@ class PolymarketClient:
                 taker_fee_bps = 1000
                 # Only log once per market
                 if timestamp not in self._token_cache:
-                    print(f"[polymarket] No takerBaseFee in response for {slug}, using default {taker_fee_bps} bps")
+                    print(
+                        f"[polymarket] No takerBaseFee in response for {slug}, using default {taker_fee_bps} bps")
             else:
                 taker_fee_bps = int(taker_fee_bps)
 
@@ -215,7 +218,7 @@ class PolymarketClient:
         return success
 
     def get_upcoming_market_timestamps(self, count: int = 5) -> list[int]:
-        """Get timestamps of upcoming BTC 5-min windows.
+        """Get timestamps of upcoming 5-min windows.
 
         Useful for pre-fetching market data.
         """
@@ -230,7 +233,8 @@ class PolymarketClient:
         outcomes: list[str] = []
 
         # Walk backwards from the most recent completed window
-        ts = current_window - 300  # previous window (should be resolved or resolving)
+        # previous window (should be resolved or resolving)
+        ts = current_window - 300
         attempts = 0
         max_attempts = count + 10  # some buffer for missing markets
 
@@ -261,7 +265,8 @@ class PolymarketClient:
     def get_orderbook(self, token_id: str) -> dict:
         """Get order book for a token."""
         try:
-            resp = self.session.get(f"{self.clob}/book", params={"token_id": token_id}, timeout=self.timeout)
+            resp = self.session.get(
+                f"{self.clob}/book", params={"token_id": token_id}, timeout=self.timeout)
             resp.raise_for_status()
             return resp.json()
         except requests.exceptions.Timeout:
@@ -371,7 +376,8 @@ class PolymarketClient:
         except requests.exceptions.Timeout:
             return DEFAULT_FEE_BPS
         except Exception as e:
-            print(f"[polymarket] Error fetching fee rate: {e}, using default {DEFAULT_FEE_BPS} bps")
+            print(
+                f"[polymarket] Error fetching fee rate: {e}, using default {DEFAULT_FEE_BPS} bps")
             return DEFAULT_FEE_BPS
 
     @staticmethod
@@ -418,7 +424,8 @@ class PolymarketClient:
 
         # Sort: asks ascending (lowest first), bids descending (highest first)
         asks_sorted = sorted(asks, key=lambda x: float(x["price"]))
-        bids_sorted = sorted(bids, key=lambda x: float(x["price"]), reverse=True)
+        bids_sorted = sorted(
+            bids, key=lambda x: float(x["price"]), reverse=True)
 
         best_ask = float(asks_sorted[0]["price"])
         best_bid = float(bids_sorted[0]["price"])
@@ -428,12 +435,14 @@ class PolymarketClient:
         if side == "BUY":
             # Depth at best ask
             best_level = asks_sorted[0]
-            depth_at_best = float(best_level["price"]) * float(best_level["size"])
+            depth_at_best = float(
+                best_level["price"]) * float(best_level["size"])
             levels = asks_sorted
         else:
             # Depth at best bid
             best_level = bids_sorted[0]
-            depth_at_best = float(best_level["price"]) * float(best_level["size"])
+            depth_at_best = float(
+                best_level["price"]) * float(best_level["size"])
             levels = bids_sorted
 
         remaining_usd = amount_usd
@@ -462,7 +471,8 @@ class PolymarketClient:
 
         # Calculate fill percentage
         filled_amount = amount_usd - remaining_usd
-        fill_pct = (filled_amount / amount_usd * 100) if amount_usd > 0 else 100.0
+        fill_pct = (filled_amount / amount_usd *
+                    100) if amount_usd > 0 else 100.0
 
         if total_shares == 0:
             midpoint = (best_ask + best_bid) / 2
@@ -472,9 +482,11 @@ class PolymarketClient:
 
         # Calculate slippage vs best price
         if side == "BUY":
-            slippage_pct = (execution_price - best_ask) / best_ask * 100 if best_ask > 0 else 0
+            slippage_pct = (execution_price - best_ask) / \
+                best_ask * 100 if best_ask > 0 else 0
         else:
-            slippage_pct = (best_bid - execution_price) / best_bid * 100 if best_bid > 0 else 0
+            slippage_pct = (best_bid - execution_price) / \
+                best_bid * 100 if best_bid > 0 else 0
 
         # Calculate copy delay price impact using the improved model
         delay_impact_pct = 0.0

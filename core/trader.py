@@ -47,7 +47,7 @@ class Trade:
 
     def save(self):
         os.makedirs(Config.TRADE_RECORDS_DIR, exist_ok=True)
-        filepath = f"{Config.TRADE_RECORDS_DIR}/{self.timestamp}.trade"
+        filepath = f"{Config.TRADE_RECORDS_DIR}/{self.market_slug}.trade"
         """Saves the dataclass instance to a JSON file."""
         # Use asdict() to convert the dataclass instance to a dictionary
         data = asdict(self)
@@ -57,15 +57,15 @@ class Trade:
 
             logger = logging.getLogger(Config.LOGGER_NAME)
             logger.info(
-                f"Order for market {self.timestamp} successfully saved to {filepath}.")
+                f"Order for market {self.market_slug} successfully saved to {filepath}.")
         except IOError as e:
             logger.error(
-                f"Error saving order for market {self.timestamp} to {filepath}.: {e}")
+                f"Error saving order for market {self.market_slug} to {filepath}: {e}")
 
     @classmethod
-    def load(cls, timestamp: str):
+    def load(cls, market_slug: str):
         """Loads a dataclass instance from a JSON file."""
-        filepath = f"{Config.TRADE_RECORDS_DIR}/{timestamp}.trade"
+        filepath = f"{Config.TRADE_RECORDS_DIR}/{market_slug}.trade"
         try:
             with open(filepath, 'r') as f:
                 data = json.load(f)
@@ -315,8 +315,8 @@ class LiveTrader:
 
                 # send notification
                 usdc_balance = self.get_usdc_balance()
-                subject = f"polymarket_bot: Order created successfully for market {market.timestamp}"
-                mail_content = f"Order ID: {order_id}: https://polymarket.com/event/btc-updown-5m-{market.timestamp}"
+                subject = f"polymarket_bot: Order created successfully for market {market.slug}"
+                mail_content = f"Order ID: {order_id}: https://polymarket.com/event/{market.slug}"
                 mail_content += f"\nBalance: {usdc_balance}"
                 Emailer.send_email(subject=subject, mail_content=mail_content)
 

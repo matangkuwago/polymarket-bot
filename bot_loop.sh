@@ -14,6 +14,8 @@ while true; do
         remaining_seconds=$(($limit_seconds - $elapsed_time))
         minutes=$(echo "scale=2; $remaining_seconds/60" | bc)
         echo "$minutes minute(s) remaining till the next run."
+
+        # do other tasks while waiting
         python update_trade_records.py
     fi
     sleep 1

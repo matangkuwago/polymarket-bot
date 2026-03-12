@@ -11,4 +11,7 @@ trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 
 # Prediction proper here
 touch $LOCK_FILE
-python run_bot.py
+
+python run_bot_btc.py
+sleep 1
+python run_bot_sol.py
