@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+start_time=$SECONDS
+
 LOCK_FILE=/tmp/polymarket_bot_lock.txt
 if [ -f $LOCK_FILE ]; then
    echo "File $LOCK_FILE exists."
@@ -23,3 +25,6 @@ python run_bot.py --market_slug_prefix=xrp-updown-5m --binance_ticker=XRPUSDT
 
 # Bot for ETH 5-minute market
 python run_bot.py --market_slug_prefix=eth-updown-5m --binance_ticker=ETHUSDT
+
+elapsed_time=$(($SECONDS - $start_time))
+echo "Elapsed time: $elapsed_time"
