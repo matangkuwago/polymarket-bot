@@ -12,6 +12,8 @@ trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 # Prediction proper here
 touch $LOCK_FILE
 
-python run_bot_btc.py
-sleep 1
-python run_bot_sol.py
+# Bot for BTC 5-minute market
+python python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT
+
+# Bot for SOL 5-minute market
+python python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT
