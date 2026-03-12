@@ -13,7 +13,13 @@ trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 touch $LOCK_FILE
 
 # Bot for BTC 5-minute market
-python python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT
+python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT
+sleep 1
 
 # Bot for SOL 5-minute market
-python python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT
+python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT
+sleep 1
+
+# Bot for XRP 5-minute market
+python run_bot.py --market_slug_prefix=xrp-updown-5m --binance_ticker=XRPUSDT
+sleep 1
