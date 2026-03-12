@@ -2,7 +2,7 @@
 
 ./run_bot.sh
 
-limit_seconds=1500
+limit_seconds=1340
 start_time=$SECONDS
 
 while true; do
