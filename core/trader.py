@@ -63,9 +63,9 @@ class Trade:
                 f"Error saving order for market {self.market_slug} to {filepath}: {e}")
 
     @classmethod
-    def load(cls, market_slug: str):
+    def load(cls, market_slug: str, trade_files_directory=Config.TRADE_RECORDS_DIR):
         """Loads a dataclass instance from a JSON file."""
-        filepath = f"{Config.TRADE_RECORDS_DIR}/{market_slug}.trade"
+        filepath = f"{trade_files_directory}/{market_slug}.trade"
         try:
             with open(filepath, 'r') as f:
                 data = json.load(f)

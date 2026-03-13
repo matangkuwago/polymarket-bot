@@ -15,16 +15,16 @@ trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 touch $LOCK_FILE
 
 # Bot for BTC 5-minute market
-python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT
+python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT --paper_trade=True
 
 # Bot for SOL 5-minute market
-python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT
+python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT --paper_trade=False
 
 # Bot for XRP 5-minute market
-python run_bot.py --market_slug_prefix=xrp-updown-5m --binance_ticker=XRPUSDT
+python run_bot.py --market_slug_prefix=xrp-updown-5m --binance_ticker=XRPUSDT --paper_trade=False
 
 # Bot for ETH 5-minute market
-python run_bot.py --market_slug_prefix=eth-updown-5m --binance_ticker=ETHUSDT
+python run_bot.py --market_slug_prefix=eth-updown-5m --binance_ticker=ETHUSDT --paper_trade=True
 
 elapsed_time=$(($SECONDS - $start_time))
 echo "Elapsed time: $elapsed_time"

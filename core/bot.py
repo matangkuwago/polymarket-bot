@@ -17,11 +17,12 @@ class Polymarket5MinuteBot:
     entry_price = Config.TRADE_ENTRY_PRICE
     order_size = Config.TRADE_ORDER_SIZE
 
-    def __init__(self, polymarket_slug_prefix: str, binance_ticker: str):
+    def __init__(self, polymarket_slug_prefix: str, binance_ticker: str, paper_trade: bool = Config.PAPER_TRADE):
         self.polymarket_slug_prefix = polymarket_slug_prefix
         self.binance_ticker = binance_ticker
         self.price_history_binance = {}
         self.price_history_polymarket = {}
+        self.paper_trade = paper_trade
         self._setup_logging()
 
     def _setup_logging(self):
@@ -56,7 +57,7 @@ class Polymarket5MinuteBot:
         await self.load_binance_price_history()
         await self.load_polymarket_price_history()
         predictions = await self.get_predictions()
-        await self.place_orders(predictions, paper_trade=Config.PAPER_TRADE)
+        await self.place_orders(predictions, paper_trade=self.paper_trade)
         end_time = time.time()
         end_log_message = f"Total execution time: {end_time - start_time} seconds."
         self.logger.info(end_log_message)
