@@ -17,7 +17,7 @@ class Polymarket5MinuteBot:
     entry_price = Config.TRADE_ENTRY_PRICE
     order_size = Config.TRADE_ORDER_SIZE
 
-    def __init__(self, polymarket_slug_prefix: str, binance_ticker: str, paper_trade: bool = Config.PAPER_TRADE):
+    def __init__(self, polymarket_slug_prefix: str, binance_ticker: str, paper_trade: bool):
         self.polymarket_slug_prefix = polymarket_slug_prefix
         self.binance_ticker = binance_ticker
         self.price_history_binance = {}
