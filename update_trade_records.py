@@ -24,7 +24,7 @@ def main():
     trade_files.sort()
 
     num_records_processed = 0
-    max_records_to_process = 1
+    max_records_to_process = 20
     trader = LiveTrader()
     for file in trade_files:
         market_slug = os.path.basename(file).replace(".trade", "")
@@ -81,7 +81,6 @@ def main():
             Emailer.send_email(subject=subject, mail_content=mail_content)
 
         print(subject)
-        print(mail_content)
 
         mark_trade_as_processed(trade)
         num_records_processed += 1
