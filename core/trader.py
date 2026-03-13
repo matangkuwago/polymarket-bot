@@ -313,12 +313,14 @@ class LiveTrader:
                 order_id = response.get(
                     "orderID", response.get("id", "unknown"))
 
-                # send notification
-                usdc_balance = self.get_usdc_balance()
-                subject = f"polymarket_bot: Order created successfully for market {market.slug}"
-                mail_content = f"Order ID: {order_id}: https://polymarket.com/event/{market.slug}"
-                mail_content += f"\nBalance: {usdc_balance}"
-                Emailer.send_email(subject=subject, mail_content=mail_content)
+                if Config.EMAIL_LIMIT_ORDER_INFO:
+                    # send notification
+                    usdc_balance = self.get_usdc_balance()
+                    subject = f"polymarket_bot: Order created successfully for market {market.slug}"
+                    mail_content = f"Order ID: {order_id}: https://polymarket.com/event/{market.slug}"
+                    mail_content += f"\nBalance: {usdc_balance}"
+                    Emailer.send_email(
+                        subject=subject, mail_content=mail_content)
 
             order_status = "submitted"
 
