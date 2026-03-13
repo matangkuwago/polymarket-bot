@@ -24,7 +24,7 @@ python run_bot.py --market_slug_prefix=xrp-updown-5m --binance_ticker=XRPUSDT --
 python run_bot.py --market_slug_prefix=eth-updown-5m --binance_ticker=ETHUSDT --paper_trade=false
 
 # Bot for BTC 5-minute market
-python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT --paper_trade=true
+python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT --paper_trade=false
 
 # Run other tasks
 python update_trade_records.py
