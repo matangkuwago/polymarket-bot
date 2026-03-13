@@ -85,3 +85,7 @@ class Config:
     EMAIL_SENDER_PASS: str = os.getenv("EMAIL_SENDER_PASS", "")
     EMAIL_SMTP_SERVER: str = os.getenv("EMAIL_SMTP_SERVER", "")
     EMAIL_SMTP_PORT: int = int(os.getenv("EMAIL_SMTP_PORT", 0))
+    EMAIL_UPDATE_RECORDS_NOTIFICATION: bool = os.getenv(
+        "EMAIL_UPDATE_RECORDS_NOTIFICATION", "false").lower() == "true"
+    EMAIL_LIMIT_ORDER_INFO: bool = os.getenv(
+        "EMAIL_LIMIT_ORDER_INFO", "false").lower() == "true"
