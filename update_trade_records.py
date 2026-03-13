@@ -77,7 +77,7 @@ def main():
             f"{order_email_text}"
         )
 
-        if order and order['status'] != "CANCELED":
+        if Config.EMAIL_UPDATE_RECORDS_NOTIFICATION and order and order['status'] != "CANCELED":
             Emailer.send_email(subject=subject, mail_content=mail_content)
 
         print(subject)
