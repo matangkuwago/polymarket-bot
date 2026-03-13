@@ -20,11 +20,15 @@ def tabulate_results(table_title: str, results: dict, format: str = "html"):
     headers = ["Asset", "Count", "Wins", "%"]
     results_sorted = sorted(
         results.items(), key=lambda x: x[1]["percent"], reverse=True)
+    percents = []
     for coin, result in results_sorted:
         count = result['record_count']
         wins = result['num_won']
         percent = f"{result['percent']*100:.2f}%"
+        percents.append(result['percent']*100)
         data.append([coin, count, wins, percent])
+    percent_average = f"{(sum(percents) / len(percents)):.2f}%" if percents else "N/A"
+    data.append(["avg", "", "", percent_average])
     return f"{format_table_title(table_title, format)}" + tabulate(data, headers=headers, tablefmt=format)
 
 
