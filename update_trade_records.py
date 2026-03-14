@@ -44,7 +44,6 @@ def main():
 
         trade.outcome = market.outcome
         trade.won = True if trade.direction == market.outcome else False
-        trade.save()
         won_text = "WON" if trade.won else "LOST"
 
         order = trader.get_order(trade.order_id)
@@ -58,12 +57,21 @@ def main():
                 f"order.size_matched: {order['size_matched']}\n"
                 f"order.side: {order['side']}\n"
             )
+            trade.order_status = order['status']
+            if trade.order_status != "MATCHED":
+                pass
+                subject = f"polymarket_bot: unmatched trade found: {trade.market_slug}"
+                mail_content = f"trade: {repr(trade)}, order: {repr(trade)}"
+                Emailer.send_email(subject, mail_content)
         else:
             order_email_text = (
                 f"\n"
                 f"Order Record:\n"
                 f"Unable to get order record from Polymarket API.\n"
             )
+
+        trade.save()
+
         subject = f"polymarket_bot: result: {won_text} | {trade.market_slug}"
         mail_content = (
             f"Trade Record:\n"

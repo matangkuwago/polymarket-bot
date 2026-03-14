@@ -23,17 +23,28 @@ def tabulate_results(table_title: str, results: dict, format: str = "html"):
     percents = []
     count_total = 0
     win_total = 0
+    num_unmatched_total = 0
+    num_unmatched_wins_total = 0
     for coin, result in results_sorted:
         count = result['record_count']
         count_total += count
         wins = result['num_won']
         win_total += wins
+        num_unmatched_total += result['num_unmatched']
+        num_unmatched_wins_total += result['num_unmatched_wins']
         percent = f"{result['percent']*100:.2f}%"
         percents.append(result['percent']*100)
         data.append([coin, count, wins, percent])
     percent_average = f"{(sum(percents) / len(percents)):.2f}%" if percents else "N/A"
-    data.append(["-"*12, "-"*12, "-"*12, "-"*12])
+    data.append(["-"*11, "-"*11, "-"*11, "-"*11])
     data.append(["", count_total, win_total, percent_average])
+
+    if num_unmatched_total > 0:
+        unmatched_percent_average = f"{(sum(num_unmatched_wins_total) / len(num_unmatched_total)):.2f}%"
+        data.append(["-"*11, "-"*11, "-"*11, "-"*11])
+        data.append(["!matched", num_unmatched_total,
+                    num_unmatched_wins_total, unmatched_percent_average])
+
     return f"{format_table_title(table_title, format)}" + tabulate(data, headers=headers, tablefmt=format)
 
 
@@ -54,9 +65,15 @@ def get_results(trade_files, timestamp_earliest: int = None):
             results[coin] = {
                 "record_count": 0,
                 "num_won": 0,
+                "num_unmatched": 0,
+                "num_unmatched_wins": 0,
             }
 
         results[coin]["record_count"] += 1
+        if trade.order_status != "MATCHED":
+            results[coin]["num_unmatched"] += 1
+            if trade.won:
+                results[coin]["num_unmatched_wins"] += 1
         if trade.won:
             results[coin]["num_won"] += 1
 
