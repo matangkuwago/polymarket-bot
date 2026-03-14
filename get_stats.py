@@ -67,6 +67,9 @@ def main():
     trade_files = glob(os.path.join(processed_dir, '*.trade'))
     trade_files.sort()
 
+    if not trade_files:
+        exit(0)
+
     email_lines = []
     email_lines += [tabulate_results("All", get_results(trade_files))]
 
