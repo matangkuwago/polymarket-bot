@@ -51,19 +51,17 @@ class Polymarket5MinuteBot:
 
     async def run(self):
         start_time = time.time()
+        self.logger.info(
+            f"polymarket_bot run started | {self.polymarket_slug_prefix}")
         await self.load_binance_price_history()
         await self.load_polymarket_price_history()
         predictions = await self.get_predictions()
         await self.place_orders(predictions, paper_trade=self.paper_trade)
         end_time = time.time()
-        email_body = f"""
-        Start time: {start_time}.
-        End time: {end_time}.
-        Total execution time: {end_time - start_time} seconds.
-        """
-        self.logger.info(email_body)
-        Emailer.send_email(
-            subject=f"polymarket_bot run ended | {self.polymarket_slug_prefix} | {int(start_time)}", mail_content=email_body)
+        self.logger.info(
+            f"polymarket_bot run ended | {self.polymarket_slug_prefix}")
+        self.logger.info(
+            f"Total execution time: {end_time - start_time} seconds.")
 
     async def load_binance_price_history(self):
         index_timestamp = 0
