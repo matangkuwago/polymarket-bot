@@ -47,7 +47,7 @@ class Config:
     PAPER_TRADE: bool = os.getenv("PAPER_TRADE", "true").lower() == "true"
 
     # Logging
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "DEBUG").upper()
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
     LOGGER_NAME = "polymarket.bot"
 
     # Trade settings

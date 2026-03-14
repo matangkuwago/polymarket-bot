@@ -98,7 +98,7 @@ class Polymarket5MinuteBot:
         for i in range(num_markets_to_fetch):
             timestamp = int(current_market.timestamp())
             market = client.get_market(timestamp)
-            self.logger.info(f"market for {timestamp}: {market}")
+            self.logger.debug(f"market for {timestamp}: {market}")
             price_to_beat_raw = market.price_to_beat
             if price_to_beat_raw is None:
                 source = "binance"
@@ -115,9 +115,9 @@ class Polymarket5MinuteBot:
 
         self.price_history_polymarket = dict(
             sorted(self.price_history_polymarket.items(), key=lambda item: item[0]))
-        self.logger.info(f"price_history_polymarket:")
+        self.logger.debug(f"price_history_polymarket:")
         for key, value in self.price_history_polymarket.items():
-            self.logger.info(f"{key}: {value}")
+            self.logger.debug(f"{key}: {value}")
 
     async def get_predictions(self,
                               num_prediction_input=Config.MINIMUM_NUM_PRICE_HISTORY,
@@ -126,8 +126,8 @@ class Polymarket5MinuteBot:
         prediction_input = list(
             x["price"] for x in self.price_history_polymarket.values())[-num_prediction_input:]
         last_market_timestamp = list(self.price_history_polymarket.keys())[-1]
-        self.logger.info(f"Last {num_prediction_input} items as list:")
-        self.logger.info("\n".join(map(str, prediction_input)))
+        self.logger.debug(f"Last {num_prediction_input} items as list:")
+        self.logger.debug("\n".join(map(str, prediction_input)))
 
         predicted_directions = await self._get_predictions_from_api(prediction_input, num_predictions)
 
