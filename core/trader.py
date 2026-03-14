@@ -45,9 +45,9 @@ class Trade:
     # "insufficient_bankroll" or "shutdown" (only when force_exit)
     force_exit_reason: str | None = None
 
-    def save(self):
-        os.makedirs(Config.TRADE_RECORDS_DIR, exist_ok=True)
-        filepath = f"{Config.TRADE_RECORDS_DIR}/{self.market_slug}.trade"
+    def save(self, save_dir=Config.TRADE_RECORDS_DIR):
+        os.makedirs(save_dir, exist_ok=True)
+        filepath = f"{save_dir}/{self.market_slug}.trade"
         """Saves the dataclass instance to a JSON file."""
         # Use asdict() to convert the dataclass instance to a dictionary
         data = asdict(self)
