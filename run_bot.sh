@@ -12,12 +12,7 @@ fi
 trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 touch $LOCK_FILE
 
-function record_update_tasks {
-   ./process_trade_records.sh
-   ./send_stats.sh
-}
-
-record_update_tasks
+./process_trade_records.sh
 
 # Bot for SOL 5-minute market
 python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT
@@ -31,7 +26,8 @@ python run_bot.py --market_slug_prefix=eth-updown-5m --binance_ticker=ETHUSDT
 # Bot for BTC 5-minute market
 python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT
 
-record_update_tasks
+./process_trade_records.sh
+./send_stats.sh
 
 elapsed_time=$(($SECONDS - $start_time))
 echo "Elapsed time: $elapsed_time"
