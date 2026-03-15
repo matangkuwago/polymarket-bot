@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from core.config import Config
 from core.polymarket import PolymarketClient
 from core.trader import LiveTrader, TradeStats
-from core.utilities import Emailer
+from core.utilities import Emailer, setup_logging
 
 
 class Polymarket5MinuteBot:
@@ -22,7 +22,7 @@ class Polymarket5MinuteBot:
         self.binance_ticker = binance_ticker
         self.price_history_binance = {}
         self.price_history_polymarket = {}
-        self._setup_logging()
+        self.logger = setup_logging(f'{self.polymarket_slug_prefix}.log')
 
         # get paper trade settings
         paper_trade_settings = Config.get_paper_trade_settings()
@@ -33,30 +33,6 @@ class Polymarket5MinuteBot:
         self.paper_trade = paper_trade_settings[self.polymarket_slug_prefix]
         self.logger.info(
             f"PAPER TRADE setting for {self.polymarket_slug_prefix}: {self.paper_trade}")
-
-    def _setup_logging(self):
-        # 1. Create a custom logger
-        self.logger = logging.getLogger(Config.LOGGER_NAME)
-        self.logger.setLevel(Config.LOG_LEVEL)
-
-        # 2. Define a format for the logs
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-        # 3. Create a console handler (StreamHandler)
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(Config.LOG_LEVEL)
-        console_handler.setFormatter(formatter)
-
-        # 4. Create a file handler (FileHandler)
-        file_handler = logging.FileHandler(
-            f'Polymarket5MinuteBot-{self.polymarket_slug_prefix}.log', mode='a')
-        file_handler.setLevel(Config.LOG_LEVEL)
-        file_handler.setFormatter(formatter)
-
-        # 5. Add the handlers to the logger
-        self.logger.addHandler(console_handler)
-        self.logger.addHandler(file_handler)
 
     def evaluate_paper_trade_change(self):
         trade_stats = TradeStats()

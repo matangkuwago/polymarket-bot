@@ -1,5 +1,6 @@
 import logging
 import smtplib
+import sys
 from os.path import basename
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
@@ -54,3 +55,29 @@ class Emailer:
         session.sendmail(sender_address, receiver_address, text)
         session.quit()
         logger.info(f"Email sent to {sender_address}: {subject}")
+
+
+def setup_logging(log_file, logger_name: str = Config.LOGGER_NAME, log_level=Config.LOG_LEVEL):
+    # 1. Create a custom logger
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(log_level)
+
+    # 2. Define a format for the logs
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # 3. Create a console handler (StreamHandler)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(Config.LOG_LEVEL)
+    console_handler.setFormatter(formatter)
+
+    # 4. Create a file handler (FileHandler)
+    file_handler = logging.FileHandler(log_file, mode='a')
+    file_handler.setLevel(Config.LOG_LEVEL)
+    file_handler.setFormatter(formatter)
+
+    # 5. Add the handlers to the logger
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+    return logger

@@ -3,6 +3,7 @@
 
 import json
 import os
+import sys
 import time
 import logging
 from datetime import datetime, timedelta
@@ -12,7 +13,7 @@ from tabulate import tabulate
 from typing import cast
 from core.config import Config
 from core.polymarket import Market, PolymarketClient
-from core.utilities import Emailer
+from core.utilities import Emailer, setup_logging
 from py_clob_client.clob_types import OrderArgs, OrderType, BalanceAllowanceParams, AssetType
 from py_clob_client.order_builder.constants import BUY
 
@@ -76,12 +77,12 @@ class Trade:
         except FileNotFoundError:
             logger = logging.getLogger(Config.LOGGER_NAME)
             logger.info(
-                f"Error: Order for market {timestamp} file not found at {filepath}!")
+                f"Error: Order for {market_slug} file not found at {filepath}!")
             return None
         except json.JSONDecodeError:
             logger = logging.getLogger(Config.LOGGER_NAME)
             logger.error(
-                f"Error decoding Order for market {timestamp} from file at {filepath}!")
+                f"Error decoding Order for {market_slug} from file at {filepath}!")
             return None
 
 
@@ -113,10 +114,8 @@ class LiveTrader:
                 "FUNDER_ADDRESS required for proxy wallet (SIGNATURE_TYPE=1)")
 
         self._market_cache = market_cache
-        if logger is None:
-            self.logger = logging.getLogger(Config.LOGGER_NAME)
-        else:
-            self.logger = logger
+        self.logger = (logging.getLogger(Config.LOGGER_NAME)
+                       if logger is None else logger)
 
         self._init_client()
 
@@ -358,7 +357,10 @@ class TradeStats:
     def __init__(self, trade_files_directory: str = Config.TRADE_RECORDS_PROCESSED_DIR):
         self.trade_files_directory = trade_files_directory
         self.trade_files = []
-        self.logger = logging.getLogger(Config.LOGGER_NAME)
+        self.logger = setup_logging(
+            log_file="trade_stats.log",
+            logger_name="TradeStats"
+        )
 
         trade_files = glob(os.path.join(self.trade_files_directory, '*.trade'))
         trade_files.sort()
@@ -391,7 +393,7 @@ class TradeStats:
                 }
 
             trade_stats[market_slug]["record_count"] += 1
-            if trade.order_status != "MATCHED":
+            if not trade.paper_trade and trade.order_status != "MATCHED":
                 trade_stats[market_slug]["num_unmatched"] += 1
                 if trade.won:
                     trade_stats[market_slug]["num_unmatched_wins"] += 1
@@ -410,12 +412,12 @@ class TradeStats:
         def _can_we_revert_paper_trade_setting(record_count: int,
                                                percent_win: float,
                                                is_paper_trade_on: bool):
-            if not is_paper_trade_on:
+            if is_paper_trade_on:
                 if record_count >= Config.PAPER_TRADE_MIN_EVALUATION_COUNT and \
                         percent_win >= Config.PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD:
                     return True
 
-            if is_paper_trade_on:
+            if not is_paper_trade_on:
                 if record_count < Config.PAPER_TRADE_MIN_EVALUATION_COUNT:
                     return True
 
@@ -424,7 +426,10 @@ class TradeStats:
 
             return False
 
+        self.logger.info(f"evaluate_paper_trade_settings_change start")
         trade_stats = self.get_statistics()
+        if not trade_stats:
+            self.logger.info(f"No trade records found yet.")
         paper_trade_settings = Config.get_paper_trade_settings()
         for market_slug in trade_stats:
             if market_slug not in paper_trade_settings:
@@ -458,6 +463,7 @@ class TradeStats:
                 self.logger.info(
                     f"Paper Trade setting for {market_slug} will be kept to {is_paper_trade_on}."
                 )
+        self.logger.info(f"evaluate_paper_trade_settings_change end")
 
     @staticmethod
     def _format_table_title(title, format):
