@@ -9,10 +9,9 @@ start_time=$SECONDS
 while true; do
     elapsed_time=$(($SECONDS - $start_time))
     if [ "$elapsed_time" -ge "$limit_seconds" ]; then
+        ./process_trade_records.sh
         start_time=$SECONDS
         ./run_bot.sh
-        ./process_trade_records.sh
-        ./send_stats.sh
     else
         remaining_seconds=$(($limit_seconds - $elapsed_time))
         minutes=$(echo "scale=2; $remaining_seconds/60" | bc)
