@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
 
 limit_seconds=1500
-
-./process_trade_records.sh
 start_time=$SECONDS
 ./run_bot.sh
 
 while true; do
     elapsed_time=$(($SECONDS - $start_time))
     if [ "$elapsed_time" -ge "$limit_seconds" ]; then
-        ./process_trade_records.sh
         start_time=$SECONDS
         ./run_bot.sh
     else

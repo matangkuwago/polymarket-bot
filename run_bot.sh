@@ -12,6 +12,8 @@ fi
 trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 touch $LOCK_FILE
 
+./process_trade_records.sh
+
 # Bot for SOL 5-minute market
 python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT
 
