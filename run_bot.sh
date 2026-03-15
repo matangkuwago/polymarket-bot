@@ -17,16 +17,16 @@ touch $LOCK_FILE
 source .env
 
 # Bot for SOL 5-minute market
-python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT --paper_trade=$SOL_PAPER_TRADE
+python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT
 
 # Bot for XRP 5-minute market
-python run_bot.py --market_slug_prefix=xrp-updown-5m --binance_ticker=XRPUSDT --paper_trade=$XRP_PAPER_TRADE
+python run_bot.py --market_slug_prefix=xrp-updown-5m --binance_ticker=XRPUSDT
 
 # Bot for ETH 5-minute market
-python run_bot.py --market_slug_prefix=eth-updown-5m --binance_ticker=ETHUSDT --paper_trade=$ETH_PAPER_TRADE
+python run_bot.py --market_slug_prefix=eth-updown-5m --binance_ticker=ETHUSDT
 
 # Bot for BTC 5-minute market
-python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT --paper_trade=$BTC_PAPER_TRADE
+python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT
 
 # Run other tasks
 python update_trade_records.py

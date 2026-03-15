@@ -1,5 +1,6 @@
 # DEPRECATED: Use polymarket_algo.* packages instead. This file exists for backward compatibility.
 import os
+import json
 from datetime import timedelta, timezone
 
 from dotenv import load_dotenv
@@ -45,6 +46,11 @@ class Config:
 
     # Mode
     PAPER_TRADE: bool = os.getenv("PAPER_TRADE", "true").lower() == "true"
+    PAPER_TRADE_SETTINGS_FILE = "paper_trade.json"
+    PAPER_TRADE_MIN_EVALUATION_COUNT = int(
+        os.getenv("PAPER_TRADE_MIN_EVALUATION_COUNT", 20))
+    PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD = float(
+        os.getenv("PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD", 0.51))
 
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -89,3 +95,21 @@ class Config:
         "EMAIL_UPDATE_RECORDS_NOTIFICATION", "false").lower() == "true"
     EMAIL_LIMIT_ORDER_INFO: bool = os.getenv(
         "EMAIL_LIMIT_ORDER_INFO", "false").lower() == "true"
+
+    @classmethod
+    def get_paper_trade_settings(cls, settings_file: str = None):
+        json_file = cls.PAPER_TRADE_SETTINGS_FILE if settings_file is None else settings_file
+        try:
+            with open(json_file, 'r') as f:
+                data = json.load(f)
+            return data
+        except FileNotFoundError as e:
+            return {}
+        except json.JSONDecodeError:
+            return {}
+
+    @classmethod
+    def save_paper_trade_settings(cls, settings_json: dict, settings_file: str = None):
+        json_file = cls.PAPER_TRADE_SETTINGS_FILE if settings_file is None else settings_file
+        with open(json_file, 'w') as f:
+            json.dump(settings_json, f, indent=4)

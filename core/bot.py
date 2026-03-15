@@ -8,7 +8,7 @@ from binance import AsyncClient
 from datetime import datetime, timedelta
 from core.config import Config
 from core.polymarket import PolymarketClient
-from core.trader import LiveTrader
+from core.trader import LiveTrader, TradeStats
 from core.utilities import Emailer
 
 
@@ -17,13 +17,22 @@ class Polymarket5MinuteBot:
     entry_price = Config.TRADE_ENTRY_PRICE
     order_size = Config.TRADE_ORDER_SIZE
 
-    def __init__(self, polymarket_slug_prefix: str, binance_ticker: str, paper_trade: bool):
+    def __init__(self, polymarket_slug_prefix: str, binance_ticker: str):
         self.polymarket_slug_prefix = polymarket_slug_prefix
         self.binance_ticker = binance_ticker
         self.price_history_binance = {}
         self.price_history_polymarket = {}
-        self.paper_trade = paper_trade
         self._setup_logging()
+
+        # get paper trade settings
+        paper_trade_settings = Config.get_paper_trade_settings()
+        if self.polymarket_slug_prefix not in paper_trade_settings:
+            error_message = f"Paper trade settings not found for {self.polymarket_slug_prefix}!"
+            self.logger.error(error_message)
+            raise KeyError(error_message)
+        self.paper_trade = paper_trade_settings[self.polymarket_slug_prefix]
+        self.logger.info(
+            f"PAPER TRADE setting for {self.polymarket_slug_prefix}: {self.paper_trade}")
 
     def _setup_logging(self):
         # 1. Create a custom logger
@@ -49,6 +58,10 @@ class Polymarket5MinuteBot:
         self.logger.addHandler(console_handler)
         self.logger.addHandler(file_handler)
 
+    def evaluate_paper_trade_change(self):
+        trade_stats = TradeStats()
+        trade_stats.evaluate_paper_trade_settings_change()
+
     async def run(self):
         start_time = time.time()
         self.logger.info(
@@ -57,6 +70,8 @@ class Polymarket5MinuteBot:
         await self.load_polymarket_price_history()
         predictions = await self.get_predictions()
         await self.place_orders(predictions, paper_trade=self.paper_trade)
+        self.evaluate_paper_trade_change()
+
         end_time = time.time()
         self.logger.info(
             f"polymarket_bot run ended | {self.polymarket_slug_prefix}")

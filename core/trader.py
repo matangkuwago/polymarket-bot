@@ -5,11 +5,12 @@ import json
 import os
 import time
 import logging
+from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
-from datetime import datetime
 from glob import glob
+from tabulate import tabulate
 from typing import cast
-from core.config import LOCAL_TZ, TIMEZONE_NAME, Config
+from core.config import Config
 from core.polymarket import Market, PolymarketClient
 from core.utilities import Emailer
 from py_clob_client.clob_types import OrderArgs, OrderType, BalanceAllowanceParams, AssetType
@@ -357,6 +358,7 @@ class TradeStats:
     def __init__(self, trade_files_directory: str = Config.TRADE_RECORDS_PROCESSED_DIR):
         self.trade_files_directory = trade_files_directory
         self.trade_files = []
+        self.logger = logging.getLogger(Config.LOGGER_NAME)
 
         trade_files = glob(os.path.join(self.trade_files_directory, '*.trade'))
         trade_files.sort()
@@ -379,25 +381,154 @@ class TradeStats:
             if timestamp_earliest and timestamp < timestamp_earliest:
                 continue
             trade = trade_item["trade"]
-            coin = trade.market_slug[:3]
-            if coin not in trade_stats:
-                trade_stats[coin] = {
+            market_slug = trade.market_slug[:-11]
+            if market_slug not in trade_stats:
+                trade_stats[market_slug] = {
                     "record_count": 0,
                     "num_won": 0,
                     "num_unmatched": 0,
                     "num_unmatched_wins": 0,
                 }
 
-            trade_stats[coin]["record_count"] += 1
+            trade_stats[market_slug]["record_count"] += 1
             if trade.order_status != "MATCHED":
-                trade_stats[coin]["num_unmatched"] += 1
+                trade_stats[market_slug]["num_unmatched"] += 1
                 if trade.won:
-                    trade_stats[coin]["num_unmatched_wins"] += 1
+                    trade_stats[market_slug]["num_unmatched_wins"] += 1
             if trade.won:
-                trade_stats[coin]["num_won"] += 1
+                trade_stats[market_slug]["num_won"] += 1
 
-        for coin in trade_stats:
-            trade_stats[coin]["percent"] = float(
-                trade_stats[coin]["num_won"]/trade_stats[coin]["record_count"])
+        for market_slug in trade_stats:
+            trade_stats[market_slug]["percent"] = float(
+                trade_stats[market_slug]["num_won"] /
+                trade_stats[market_slug]["record_count"]
+            )
 
         return trade_stats
+
+    def evaluate_paper_trade_settings_change(self):
+        def _can_we_revert_paper_trade_setting(record_count: int,
+                                               percent_win: float,
+                                               is_paper_trade_on: bool):
+            if not is_paper_trade_on:
+                if record_count >= Config.PAPER_TRADE_MIN_EVALUATION_COUNT and \
+                        percent_win >= Config.PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD:
+                    return True
+
+            if is_paper_trade_on:
+                if record_count < Config.PAPER_TRADE_MIN_EVALUATION_COUNT:
+                    return True
+
+                if percent_win < Config.PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD:
+                    return True
+
+            return False
+
+        trade_stats = self.get_statistics()
+        paper_trade_settings = Config.get_paper_trade_settings()
+        for market_slug in trade_stats:
+            if market_slug not in paper_trade_settings:
+                raise KeyError(
+                    f"{market_slug} not found in paper trade settings!")
+            is_paper_trade_on = paper_trade_settings[market_slug]
+            record_count = trade_stats[market_slug]["record_count"]
+            num_wins = trade_stats[market_slug]["num_won"]
+            if record_count == 0:
+                return
+            percent_win = float(num_wins/record_count)
+            if _can_we_revert_paper_trade_setting(record_count, percent_win, is_paper_trade_on):
+                old_paper_trade_setting = is_paper_trade_on
+                new_paper_trade_setting = not is_paper_trade_on
+                paper_trade_settings[market_slug] = new_paper_trade_setting
+                Config.save_paper_trade_settings(paper_trade_settings)
+                subject = (
+                    f"polymarket_bot: Paper Trade setting for {market_slug} "
+                    f"has been changed to {new_paper_trade_setting}"
+                )
+                mail_content = (
+                    f"old_paper_trade_setting: {old_paper_trade_setting}\n"
+                    f"new_paper_trade_setting: {old_paper_trade_setting}\n"
+                    f"record_count: {record_count}\n"
+                    f"percent_win: {percent_win}\n"
+                )
+                self.logger.info(subject)
+                self.logger.info(mail_content)
+                Emailer.send_email(subject, mail_content)
+
+    @staticmethod
+    def _format_table_title(title, format):
+        if format == "html":
+            return f"<br/><h4>{title}</h4>"
+
+        return f"\n\n{title}:\n"
+
+    @staticmethod
+    def _tabulate_results(table_title: str, results: dict, format: str = "html"):
+        data = []
+        headers = ["Market", "Count", "Wins", "%"]
+        results_sorted = sorted(
+            results.items(), key=lambda x: x[1]["percent"], reverse=True)
+        percents = []
+        count_total = 0
+        win_total = 0
+        num_unmatched_total = 0
+        num_unmatched_wins_total = 0
+        for market, result in results_sorted:
+            count = result['record_count']
+            count_total += count
+            wins = result['num_won']
+            win_total += wins
+            num_unmatched_total += int(result['num_unmatched'])
+            num_unmatched_wins_total += int(result['num_unmatched_wins'])
+            percent = f"{result['percent']*100:.2f}%"
+            percents.append(result['percent']*100)
+            data.append([market[:3], count, wins, percent])
+        percent_average = f"{(sum(percents) / len(percents)):.2f}%" if percents else "N/A"
+        data.append(["-"*11, "-"*11, "-"*11, "-"*11])
+        data.append(["", count_total, win_total, percent_average])
+
+        if num_unmatched_total > 0:
+            unmatched_percent_average = f"{(num_unmatched_wins_total / num_unmatched_total)*100:.2f}%"
+            data.append(["-"*11, "-"*11, "-"*11, "-"*11])
+            data.append(["x", num_unmatched_total,
+                        num_unmatched_wins_total, unmatched_percent_average])
+
+        return (
+            f"{TradeStats._format_table_title(table_title, format)}" +
+            tabulate(data, headers=headers, tablefmt=format)
+        )
+
+    def send_stats_email(self):
+        if not self.trade_files:
+            self.logger.info("No trade records found.")
+            return
+
+        email_lines = []
+        email_lines += [self._tabulate_results("All",
+                                               self.get_statistics())]
+
+        date_limit = datetime.now() - timedelta(hours=1)
+        timestamp = date_limit.timestamp()
+        email_lines += [self._tabulate_results("1H",
+                                               self.get_statistics(timestamp))]
+
+        date_limit = datetime.now() - timedelta(hours=4)
+        timestamp = date_limit.timestamp()
+        email_lines += [self._tabulate_results("4H",
+                                               self.get_statistics(timestamp))]
+
+        date_limit = datetime.now() - timedelta(hours=8)
+        timestamp = date_limit.timestamp()
+        email_lines += [self._tabulate_results("8H",
+                                               self.get_statistics(timestamp))]
+
+        date_limit = datetime.now() - timedelta(hours=24)
+        timestamp = date_limit.timestamp()
+        email_lines += [self._tabulate_results("24H",
+                                               self.get_statistics(timestamp))]
+
+        subject = f"polymarket_bot: stats | {int(datetime.now().timestamp())}"
+        mail_content = "".join(email_lines)
+
+        Emailer.send_email(subject, mail_content=mail_content,
+                           mail_content_html=mail_content)
