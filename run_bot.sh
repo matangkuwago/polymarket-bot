@@ -10,9 +10,14 @@ else
    echo "File $LOCK_FILE does not exist."
 fi
 trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
-
-# Prediction proper here
 touch $LOCK_FILE
+
+function record_update_tasks {
+   ./process_trade_records.sh
+   ./send_stats.sh
+}
+
+record_update_tasks
 
 # Bot for SOL 5-minute market
 python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT
@@ -26,9 +31,7 @@ python run_bot.py --market_slug_prefix=eth-updown-5m --binance_ticker=ETHUSDT
 # Bot for BTC 5-minute market
 python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT
 
-# Run other tasks
-python update_trade_records.py
-python get_stats.py
+record_update_tasks
 
 elapsed_time=$(($SECONDS - $start_time))
 echo "Elapsed time: $elapsed_time"

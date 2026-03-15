@@ -2,7 +2,7 @@
 
 start_time=$SECONDS
 
-LOCK_FILE=/tmp/process_trade_records_lock.txt
+LOCK_FILE=/tmp/send_stats_lock.txt
 if [ -f $LOCK_FILE ]; then
    echo "File $LOCK_FILE exists."
    exit 1
@@ -12,8 +12,7 @@ fi
 trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 touch $LOCK_FILE
 
-python update_trade_records.py
-python evaluate_paper_trade_settings.py
+python get_stats.py
 
 elapsed_time=$(($SECONDS - $start_time))
 echo "Elapsed time: $elapsed_time"
