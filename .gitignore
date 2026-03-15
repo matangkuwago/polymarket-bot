@@ -210,3 +210,4 @@ __marimo__/
 trades
 trades_processed
 .DS_Store
+paper_trade.json

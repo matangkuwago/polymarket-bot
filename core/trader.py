@@ -448,14 +448,16 @@ class TradeStats:
                 Config.save_paper_trade_settings(paper_trade_settings)
                 subject = (
                     f"polymarket_bot: Paper Trade setting for {market_slug} "
-                    f"has been changed to {new_paper_trade_setting}"
+                    f"changed to {new_paper_trade_setting} | "
+                    f"{int(datetime.now().timestamp())}"
                 )
                 mail_content = (
                     f"market_slug: {market_slug}\n"
                     f"old_paper_trade_setting: {old_paper_trade_setting}\n"
                     f"new_paper_trade_setting: {new_paper_trade_setting}\n"
+                    f"min_count {Config.PAPER_TRADE_MIN_EVALUATION_COUNT}\n"
                     f"record_count: {record_count}\n"
-                    f"percent_win: {percent_win}\n"
+                    f"percent_win: {percent_win*100:.2f}%\n"
                 )
                 self.logger.info(subject)
                 self.logger.info(mail_content)
