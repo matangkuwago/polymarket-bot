@@ -451,6 +451,7 @@ class TradeStats:
                     f"has been changed to {new_paper_trade_setting}"
                 )
                 mail_content = (
+                    f"market_slug: {market_slug}\n"
                     f"old_paper_trade_setting: {old_paper_trade_setting}\n"
                     f"new_paper_trade_setting: {new_paper_trade_setting}\n"
                     f"record_count: {record_count}\n"
