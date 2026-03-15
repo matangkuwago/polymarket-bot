@@ -14,8 +14,6 @@ trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 # Prediction proper here
 touch $LOCK_FILE
 
-source .env
-
 # Bot for SOL 5-minute market
 python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT
 

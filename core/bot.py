@@ -8,7 +8,7 @@ from binance import AsyncClient
 from datetime import datetime, timedelta
 from core.config import Config
 from core.polymarket import PolymarketClient
-from core.trader import LiveTrader, TradeStats
+from core.trader import LiveTrader
 from core.utilities import Emailer, setup_logging
 
 
@@ -34,10 +34,6 @@ class Polymarket5MinuteBot:
         self.logger.info(
             f"PAPER TRADE setting for {self.polymarket_slug_prefix}: {self.paper_trade}")
 
-    def evaluate_paper_trade_change(self):
-        trade_stats = TradeStats()
-        trade_stats.evaluate_paper_trade_settings_change()
-
     async def run(self):
         start_time = time.time()
         self.logger.info(
@@ -46,7 +42,6 @@ class Polymarket5MinuteBot:
         await self.load_polymarket_price_history()
         predictions = await self.get_predictions()
         await self.place_orders(predictions, paper_trade=self.paper_trade)
-        self.evaluate_paper_trade_change()
 
         end_time = time.time()
         self.logger.info(
