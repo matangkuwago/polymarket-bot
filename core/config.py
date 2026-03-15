@@ -47,6 +47,8 @@ class Config:
     # Mode
     PAPER_TRADE: bool = os.getenv("PAPER_TRADE", "true").lower() == "true"
     PAPER_TRADE_SETTINGS_FILE = "paper_trade.json"
+    PAPER_TRADE_MIN_EVALUATION_HOURS = float(
+        os.getenv("PAPER_TRADE_MIN_EVALUATION_HOURS", 2.0))
     PAPER_TRADE_MIN_EVALUATION_COUNT = int(
         os.getenv("PAPER_TRADE_MIN_EVALUATION_COUNT", 20))
     PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD = float(

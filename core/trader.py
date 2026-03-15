@@ -408,7 +408,7 @@ class TradeStats:
 
         return trade_stats
 
-    def evaluate_paper_trade_settings_change(self):
+    def evaluate_paper_trade_settings_change(self, timestamp_earliest: int = None):
         def _can_we_revert_paper_trade_setting(record_count: int,
                                                percent_win: float,
                                                is_paper_trade_on: bool):
@@ -427,7 +427,7 @@ class TradeStats:
             return False
 
         self.logger.info(f"evaluate_paper_trade_settings_change start")
-        trade_stats = self.get_statistics()
+        trade_stats = self.get_statistics(timestamp_earliest)
         if not trade_stats:
             self.logger.info(f"No trade records found yet.")
         paper_trade_settings = Config.get_paper_trade_settings()
@@ -520,25 +520,12 @@ class TradeStats:
         email_lines += [self._tabulate_results("All",
                                                self.get_statistics())]
 
-        date_limit = datetime.now() - timedelta(hours=1)
-        timestamp = date_limit.timestamp()
-        email_lines += [self._tabulate_results("1H",
-                                               self.get_statistics(timestamp))]
-
-        date_limit = datetime.now() - timedelta(hours=4)
-        timestamp = date_limit.timestamp()
-        email_lines += [self._tabulate_results("4H",
-                                               self.get_statistics(timestamp))]
-
-        date_limit = datetime.now() - timedelta(hours=8)
-        timestamp = date_limit.timestamp()
-        email_lines += [self._tabulate_results("8H",
-                                               self.get_statistics(timestamp))]
-
-        date_limit = datetime.now() - timedelta(hours=24)
-        timestamp = date_limit.timestamp()
-        email_lines += [self._tabulate_results("24H",
-                                               self.get_statistics(timestamp))]
+        hours = [1, 2, 4, 8, 24]
+        for hour in hours:
+            date_limit = datetime.now() - timedelta(hours=hour)
+            timestamp = date_limit.timestamp()
+            email_lines += [self._tabulate_results(f"{hour}H",
+                                                   self.get_statistics(timestamp))]
 
         subject = f"polymarket_bot: stats | {int(datetime.now().timestamp())}"
         mail_content = "".join(email_lines)
