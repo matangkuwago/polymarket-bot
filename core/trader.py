@@ -447,13 +447,17 @@ class TradeStats:
                 )
                 mail_content = (
                     f"old_paper_trade_setting: {old_paper_trade_setting}\n"
-                    f"new_paper_trade_setting: {old_paper_trade_setting}\n"
+                    f"new_paper_trade_setting: {new_paper_trade_setting}\n"
                     f"record_count: {record_count}\n"
                     f"percent_win: {percent_win}\n"
                 )
                 self.logger.info(subject)
                 self.logger.info(mail_content)
                 Emailer.send_email(subject, mail_content)
+            else:
+                self.logger.info(
+                    f"Paper Trade setting for {market_slug} will be kept to {is_paper_trade_on}."
+                )
 
     @staticmethod
     def _format_table_title(title, format):
