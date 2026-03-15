@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-
-start_time=$SECONDS
 limit_seconds=1500
 
+./process_trade_records.sh
+start_time=$SECONDS
 ./run_bot.sh
 
 while true; do
@@ -11,6 +11,8 @@ while true; do
     if [ "$elapsed_time" -ge "$limit_seconds" ]; then
         start_time=$SECONDS
         ./run_bot.sh
+        ./process_trade_records.sh
+        ./send_stats.sh
     else
         remaining_seconds=$(($limit_seconds - $elapsed_time))
         minutes=$(echo "scale=2; $remaining_seconds/60" | bc)
