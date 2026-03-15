@@ -61,7 +61,7 @@ def main():
             if trade.order_status != "MATCHED":
                 pass
                 subject = f"polymarket_bot: unmatched trade found: {trade.market_slug}"
-                mail_content = f"trade: {repr(trade)}, order: {repr(trade)}"
+                mail_content = f"trade: {repr(trade)}, order: {repr(order)}"
                 Emailer.send_email(subject, mail_content)
         else:
             order_email_text = (
