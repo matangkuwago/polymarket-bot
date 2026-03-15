@@ -7,6 +7,7 @@ import time
 import logging
 from dataclasses import dataclass, asdict
 from datetime import datetime
+from glob import glob
 from typing import cast
 from core.config import LOCAL_TZ, TIMEZONE_NAME, Config
 from core.polymarket import Market, PolymarketClient
@@ -349,3 +350,54 @@ class LiveTrader:
             fee_pct=fee_pct,
             order_status=order_status,
         )
+
+
+class TradeStats:
+
+    def __init__(self, trade_files_directory: str = Config.TRADE_RECORDS_PROCESSED_DIR):
+        self.trade_files_directory = trade_files_directory
+        self.trade_files = []
+
+        trade_files = glob(os.path.join(self.trade_files_directory, '*.trade'))
+        trade_files.sort()
+        for file in trade_files:
+            market_slug = os.path.basename(file).replace(".trade", "")
+            timestamp = int(market_slug[-10:])
+            trade = Trade.load(
+                market_slug, trade_files_directory=self.trade_files_directory)
+            if not trade:
+                continue
+            self.trade_files.append({"timestamp": timestamp, "trade": trade})
+
+    def get_trade_files(self):
+        return self.trade_files
+
+    def get_statistics(self, timestamp_earliest: int = None):
+        trade_stats = {}
+        for trade_item in self.trade_files:
+            timestamp = trade_item["timestamp"]
+            if timestamp_earliest and timestamp < timestamp_earliest:
+                continue
+            trade = trade_item["trade"]
+            coin = trade.market_slug[:3]
+            if coin not in trade_stats:
+                trade_stats[coin] = {
+                    "record_count": 0,
+                    "num_won": 0,
+                    "num_unmatched": 0,
+                    "num_unmatched_wins": 0,
+                }
+
+            trade_stats[coin]["record_count"] += 1
+            if trade.order_status != "MATCHED":
+                trade_stats[coin]["num_unmatched"] += 1
+                if trade.won:
+                    trade_stats[coin]["num_unmatched_wins"] += 1
+            if trade.won:
+                trade_stats[coin]["num_won"] += 1
+
+        for coin in trade_stats:
+            trade_stats[coin]["percent"] = float(
+                trade_stats[coin]["num_won"]/trade_stats[coin]["record_count"])
+
+        return trade_stats
