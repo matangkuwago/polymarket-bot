@@ -520,7 +520,7 @@ class TradeStats:
         email_lines += [self._tabulate_results("All",
                                                self.get_statistics())]
 
-        hours = [1, 2, 4, 8, 24]
+        hours = [2, 4, 8, 24]
         for hour in hours:
             date_limit = datetime.now() - timedelta(hours=hour)
             timestamp = date_limit.timestamp()
