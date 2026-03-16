@@ -408,7 +408,7 @@ class TradeStats:
 
         return trade_stats
 
-    def evaluate_paper_trade_settings_change(self, timestamp_earliest: int = None):
+    def evaluate_paper_trade_settings_change(self):
         def _can_we_revert_paper_trade_setting(record_count: int,
                                                percent_win: float,
                                                is_paper_trade_on: bool):
@@ -427,15 +427,20 @@ class TradeStats:
             return False
 
         self.logger.info(f"evaluate_paper_trade_settings_change start")
-        trade_stats = self.get_statistics(timestamp_earliest)
-        if not trade_stats:
-            self.logger.info(f"No trade records found yet.")
         paper_trade_settings = Config.get_paper_trade_settings()
-        for market_slug in trade_stats:
-            if market_slug not in paper_trade_settings:
-                raise KeyError(
-                    f"{market_slug} not found in paper trade settings!")
+        for market_slug in paper_trade_settings.keys():
             is_paper_trade_on = paper_trade_settings[market_slug]
+
+            evaluation_hours = (Config.PAPER_TRADE_MIN_EVALUATION_HOURS_ON if is_paper_trade_on
+                                else Config.PAPER_TRADE_MIN_EVALUATION_HOURS_OFF)
+            timestamp_earliest = (datetime.now() -
+                                  timedelta(hours=evaluation_hours)).timestamp()
+            trade_stats = self.get_statistics(timestamp_earliest)
+            if not trade_stats:
+                self.logger.info(
+                    f"No trade records found yet for evaluating {market_slug}.")
+                continue
+
             record_count = trade_stats[market_slug]["record_count"]
             num_wins = trade_stats[market_slug]["num_won"]
             if record_count == 0:

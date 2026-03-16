@@ -47,12 +47,14 @@ class Config:
     # Mode
     PAPER_TRADE: bool = os.getenv("PAPER_TRADE", "true").lower() == "true"
     PAPER_TRADE_SETTINGS_FILE = "paper_trade.json"
-    PAPER_TRADE_MIN_EVALUATION_HOURS = float(
-        os.getenv("PAPER_TRADE_MIN_EVALUATION_HOURS", 2.0))
     PAPER_TRADE_MIN_EVALUATION_COUNT = int(
         os.getenv("PAPER_TRADE_MIN_EVALUATION_COUNT", 20))
     PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD = float(
         os.getenv("PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD", 0.51))
+    PAPER_TRADE_MIN_EVALUATION_HOURS_OFF = float(
+        os.getenv("PAPER_TRADE_MIN_EVALUATION_HOURS", 4.0))
+    PAPER_TRADE_MIN_EVALUATION_HOURS_ON = float(
+        os.getenv("PAPER_TRADE_MIN_EVALUATION_HOURS", 2.0))
 
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -109,6 +111,14 @@ class Config:
             return {}
         except json.JSONDecodeError:
             return {}
+
+    @classmethod
+    def get_paper_trade_setting(cls, market_slug: str, settings_file: str = None):
+        settings = cls.get_paper_trade_settings()
+        if market_slug not in settings:
+            raise KeyError(
+                f"{market_slug} not found in paper trade settings!")
+        return settings[market_slug]
 
     @classmethod
     def save_paper_trade_settings(cls, settings_json: dict, settings_file: str = None):
