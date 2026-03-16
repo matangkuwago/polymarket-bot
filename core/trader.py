@@ -490,21 +490,23 @@ class TradeStats:
             wins = result['num_won']
             wins_total += wins
             percent = f"{result['percent']*100:.2f}%"
+            data.append(["-"*11, "-"*11, "-"*11, "-"*11])
             data.append([market[:3], count, wins, percent])
 
-            if count > 0:
+            if count > 0 and result['num_unmatched_wins'] > 0:
                 matched_wins = wins - result['num_unmatched_wins']
                 matched_wins_total += matched_wins
                 matched_wins_percent = float(matched_wins / count)
                 data.append(["matched", count, matched_wins,
                             f"{matched_wins_percent*100:.2f}%"])
-                data.append(["-"*11, "-"*11, "-"*11, "-"*11])
 
         if count_total > 0:
+            data.append(["-"*11, "-"*11, "-"*11, "-"*11])
             data.append(["total", count_total, wins_total,
                         f"{100*wins_total/count_total:.2f}%"])
-            data.append(["matched", count_total,
-                        matched_wins_total, f"{100*matched_wins_total/count_total:.2f}%"])
+            if matched_wins_total > 0:
+                data.append(["matched", count_total,
+                            matched_wins_total, f"{100*matched_wins_total/count_total:.2f}%"])
             data.append(["-"*11, "-"*11, "-"*11, "-"*11])
 
         return (
