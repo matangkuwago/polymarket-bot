@@ -44,17 +44,16 @@ class Config:
     # Timing
     ENTRY_SECONDS_BEFORE: int = int(os.getenv("ENTRY_SECONDS_BEFORE", "30"))
 
-    # Mode
-    PAPER_TRADE: bool = os.getenv("PAPER_TRADE", "true").lower() == "true"
+    # Paper Trade settings
     PAPER_TRADE_SETTINGS_FILE = "paper_trade.json"
     PAPER_TRADE_MIN_EVALUATION_COUNT = int(
-        os.getenv("PAPER_TRADE_MIN_EVALUATION_COUNT", 20))
+        os.getenv("PAPER_TRADE_MIN_EVALUATION_COUNT", 10))
     PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD = float(
         os.getenv("PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD", 0.51))
-    PAPER_TRADE_MIN_EVALUATION_HOURS_OFF = float(
-        os.getenv("PAPER_TRADE_MIN_EVALUATION_HOURS", 4.0))
-    PAPER_TRADE_MIN_EVALUATION_HOURS_ON = float(
-        os.getenv("PAPER_TRADE_MIN_EVALUATION_HOURS", 2.0))
+    PAPER_TRADE_OFF_EVALUATION_HOURS = float(
+        os.getenv("PAPER_TRADE_OFF_EVALUATION_HOURS", 2.0))
+    PAPER_TRADE_ON_EVALUATION_HOURS = float(
+        os.getenv("PAPER_TRADE_ON_MIN_EVALUATION_HOURS", 4.0))
 
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -63,9 +62,9 @@ class Config:
     # Trade settings
     TRADE_RECORDS_DIR: str = "trades"
     TRADE_RECORDS_PROCESSED_DIR: str = "trades_processed"
-    TRADE_ENTRY_PRICE: float = float(os.getenv("TRADE_ENTRY_PRICE", 0.5))
+    TRADE_ENTRY_PRICE: float = float(os.getenv("TRADE_ENTRY_PRICE", 0.49))
     TRADE_ORDER_SIZE: float = float(os.getenv("TRADE_ORDER_SIZE", 5.0))
-    TRADE_ORDER_EXPIRATION: int = int(os.getenv("TRADE_ORDER_EXPIRATION", 150))
+    TRADE_ORDER_EXPIRATION: int = int(os.getenv("TRADE_ORDER_EXPIRATION", 210))
 
     # WebSocket settings
     WS_CLOB_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market"

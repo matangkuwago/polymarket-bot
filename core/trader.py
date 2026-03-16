@@ -431,8 +431,8 @@ class TradeStats:
         for market_slug in paper_trade_settings.keys():
             is_paper_trade_on = paper_trade_settings[market_slug]
 
-            evaluation_hours = (Config.PAPER_TRADE_MIN_EVALUATION_HOURS_ON if is_paper_trade_on
-                                else Config.PAPER_TRADE_MIN_EVALUATION_HOURS_OFF)
+            evaluation_hours = (Config.PAPER_TRADE_ON_EVALUATION_HOURS if is_paper_trade_on
+                                else Config.PAPER_TRADE_OFF_EVALUATION_HOURS)
             timestamp_earliest = (datetime.now() -
                                   timedelta(hours=evaluation_hours)).timestamp()
             trade_stats = self.get_statistics(timestamp_earliest)
