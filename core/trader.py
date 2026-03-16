@@ -481,30 +481,31 @@ class TradeStats:
         headers = ["Market", "Count", "Wins", "%"]
         results_sorted = sorted(
             results.items(), key=lambda x: x[1]["percent"], reverse=True)
-        percents = []
         count_total = 0
-        win_total = 0
-        num_unmatched_total = 0
-        num_unmatched_wins_total = 0
+        wins_total = 0
+        matched_wins_total = 0
         for market, result in results_sorted:
             count = result['record_count']
             count_total += count
             wins = result['num_won']
-            win_total += wins
-            num_unmatched_total += int(result['num_unmatched'])
-            num_unmatched_wins_total += int(result['num_unmatched_wins'])
+            wins_total += wins
             percent = f"{result['percent']*100:.2f}%"
-            percents.append(result['percent']*100)
             data.append([market[:3], count, wins, percent])
-        percent_average = f"{(sum(percents) / len(percents)):.2f}%" if percents else "N/A"
-        data.append(["-"*11, "-"*11, "-"*11, "-"*11])
-        data.append(["", count_total, win_total, percent_average])
 
-        if num_unmatched_total > 0:
-            unmatched_percent_average = f"{(num_unmatched_wins_total / num_unmatched_total)*100:.2f}%"
+            if count > 0:
+                matched_wins = wins - result['num_unmatched_wins']
+                matched_wins_total += matched_wins
+                matched_wins_percent = float(matched_wins / count)
+                data.append(["matched", count, matched_wins,
+                            f"{matched_wins_percent*100:.2f}%"])
+                data.append(["-"*11, "-"*11, "-"*11, "-"*11])
+
+        if count_total > 0:
+            data.append(["total", count_total, wins_total,
+                        f"{100*wins_total/count_total:.2f}%"])
+            data.append(["matched", count_total,
+                        matched_wins_total, f"{100*matched_wins_total/count_total:.2f}%"])
             data.append(["-"*11, "-"*11, "-"*11, "-"*11])
-            data.append(["x", num_unmatched_total,
-                        num_unmatched_wins_total, unmatched_percent_average])
 
         return (
             f"{TradeStats._format_table_title(table_title, format)}" +
