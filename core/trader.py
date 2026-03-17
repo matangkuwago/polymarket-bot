@@ -430,8 +430,9 @@ class TradeStats:
         paper_trade_settings = Config.get_paper_trade_settings()
         for market_slug in paper_trade_settings.keys():
             is_paper_trade_on = paper_trade_settings[market_slug]
-
             evaluation_hours = Config.PAPER_TRADE_EVALUATION_HOURS
+            self.logger.info(
+                f"market_slug: {market_slug}, paper_trade: {is_paper_trade_on}, evaluation_hours: {evaluation_hours}")
             timestamp_earliest = (datetime.now() -
                                   timedelta(hours=evaluation_hours)).timestamp()
             trade_stats = self.get_statistics(timestamp_earliest)
@@ -441,7 +442,9 @@ class TradeStats:
                 continue
 
             record_count = trade_stats[market_slug]["record_count"]
-            num_wins = trade_stats[market_slug]["num_won"]
+            num_unmatched_wins = trade_stats[market_slug]["num_unmatched_wins"]
+            num_won = trade_stats[market_slug]["num_won"] - num_unmatched_wins
+            num_wins = num_won - num_unmatched_wins
             if record_count == 0:
                 return
             percent_win = float(num_wins/record_count)
@@ -460,7 +463,10 @@ class TradeStats:
                     f"old_paper_trade_setting: {old_paper_trade_setting}\n"
                     f"new_paper_trade_setting: {new_paper_trade_setting}\n"
                     f"min_count {Config.PAPER_TRADE_MIN_EVALUATION_COUNT}\n"
+                    f"evaluation_hours: {evaluation_hours}\n"
                     f"record_count: {record_count}\n"
+                    f"num_wins: {num_won}\n"
+                    f"num_wins - unmatched wins: {num_wins}\n"
                     f"percent_win: {percent_win*100:.2f}%\n"
                 )
                 self.logger.info(subject)
@@ -468,7 +474,15 @@ class TradeStats:
                 Emailer.send_email(subject, mail_content)
             else:
                 self.logger.info(
-                    f"Paper Trade setting for {market_slug} will be kept to {is_paper_trade_on}."
+                    f"\n------------------------------\n"
+                    f"Paper Trade setting for {market_slug} will be kept to {is_paper_trade_on}.\n"
+                    f"min_count {Config.PAPER_TRADE_MIN_EVALUATION_COUNT}\n"
+                    f"evaluation_hours: {evaluation_hours}\n"
+                    f"record_count: {record_count}\n"
+                    f"num_wins: {num_won}\n"
+                    f"num_wins - unmatched wins: {num_wins}\n"
+                    f"percent_win: {percent_win*100:.2f}%\n"
+                    f"------------------------------\n"
                 )
         self.logger.info(f"evaluate_paper_trade_settings_change end")
 
@@ -503,6 +517,8 @@ class TradeStats:
                 matched_wins_percent = float(matched_wins / count)
                 data.append(["matched", count, matched_wins,
                             f"{matched_wins_percent*100:.2f}%"])
+            else:
+                matched_wins_total += wins
 
         if count_total > 0:
             data.append(["-"*11, "-"*11, "-"*11, "-"*11])
