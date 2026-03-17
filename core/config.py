@@ -63,6 +63,8 @@ class Config:
     TRADE_ENTRY_PRICE: float = float(os.getenv("TRADE_ENTRY_PRICE", 0.49))
     TRADE_ORDER_SIZE: float = float(os.getenv("TRADE_ORDER_SIZE", 5.0))
     TRADE_ORDER_EXPIRATION: int = int(os.getenv("TRADE_ORDER_EXPIRATION", 210))
+    TRADE_MAX_RECORDS_UPDATE: int = int(
+        os.getenv("TRADE_MAX_RECORDS_UPDATE", 50))
 
     # WebSocket settings
     WS_CLOB_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market"

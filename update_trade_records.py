@@ -24,7 +24,6 @@ def main():
     trade_files.sort()
 
     num_records_processed = 0
-    max_records_to_process = 20
     trader = LiveTrader()
     for file in trade_files:
         market_slug = os.path.basename(file).replace(".trade", "")
@@ -92,7 +91,7 @@ def main():
 
         mark_trade_as_processed(trade)
         num_records_processed += 1
-        if num_records_processed >= max_records_to_process:
+        if num_records_processed >= Config.TRADE_MAX_RECORDS_UPDATE:
             break
 
 
