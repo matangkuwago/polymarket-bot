@@ -1,9 +1,8 @@
-# DEPRECATED: Use polymarket_algo.* packages instead. This file exists for backward compatibility.
-"""Trading execution — paper and live modes."""
-
+import csv
+import io
 import json
 import os
-import sys
+import requests as rs
 import time
 import logging
 from datetime import datetime, timedelta
@@ -408,13 +407,51 @@ class TradeStats:
 
         return trade_stats
 
+    def save_override_settings_online(self):
+
+        csv_url = Config.MARKET_SETTINGS_OVERRIDE_URL
+        self.logger.info(f"Getting market settings online: {csv_url}")
+        response = rs.get(url=csv_url)
+        csv_content_response = response.content.decode('utf-8')
+        csv_contents = csv.reader(io.StringIO(csv_content_response))
+
+        online_settings = {}
+
+        next(csv_contents)
+        for line in csv_contents:
+            market = line[0]
+            online_settings[market] = dict(Config.MARKET_SETTINGS_DEFAULT)
+            online_settings[market]["paper_trade_evaluation_mode"] = line[1]
+            online_settings[market]["paper_trade"] = str(
+                line[2]).lower() == "true"
+            online_settings[market]["evaluation_count"] = int(line[3])
+            online_settings[market]["evaluation_hours"] = float(line[4])
+            online_settings[market]["evaluation_percent"] = float(line[5])
+
+        if online_settings:
+            self.logger.info(
+                f"Online market settings retrieved online: {json.dumps(online_settings, indent=4)}")
+            local_market_settings = Config._get_all_market_settings()
+            for market in online_settings.keys():
+                if market not in local_market_settings:
+                    local_market_settings[market] = dict(
+                        online_settings[market])
+                else:
+                    if online_settings[market]["paper_trade_evaluation_mode"] == "dynamic":
+                        # retain local paper_trade config since another function is using this for evaluation
+                        online_settings[market]["paper_trade"] = local_market_settings[market]["paper_trade"]
+                    local_market_settings[market] = local_market_settings[market] | online_settings[market]
+            Config._save_all_market_settings(local_market_settings)
+            self.logger.info(
+                f"Saved market settings: {json.dumps(local_market_settings, indent=4)}")
+
     def evaluate_paper_trade_settings_change(self):
         def _can_we_revert_paper_trade_setting(record_count: int,
                                                percent_win: float,
                                                is_paper_trade_on: bool):
             if is_paper_trade_on:
-                if record_count >= Config.PAPER_TRADE_MIN_EVALUATION_COUNT and \
-                        percent_win >= Config.PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD:
+                if (record_count >= Config.PAPER_TRADE_MIN_EVALUATION_COUNT and
+                        percent_win >= Config.PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD):
                     return True
 
             if not is_paper_trade_on:
@@ -423,14 +460,21 @@ class TradeStats:
 
                 if percent_win < Config.PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD:
                     return True
-
             return False
 
         self.logger.info(f"evaluate_paper_trade_settings_change start")
-        paper_trade_settings = Config.get_paper_trade_settings()
-        for market_slug in paper_trade_settings.keys():
-            is_paper_trade_on = paper_trade_settings[market_slug]
-            evaluation_hours = Config.PAPER_TRADE_EVALUATION_HOURS
+        self.save_override_settings_online()
+        market_settings = Config._get_all_market_settings()
+        self.logger.info(f"market_settings {market_settings}")
+        for market_slug in market_settings.keys():
+            is_paper_trade_on = market_settings[market_slug]["paper_trade"]
+
+            is_dynamic = str(
+                market_settings[market_slug]["paper_trade_evaluation_mode"]).lower() == "dynamic"
+            if not is_dynamic:
+                continue
+
+            evaluation_hours = market_settings[market_slug]["evaluation_hours"]
             self.logger.info(
                 f"market_slug: {market_slug}, paper_trade: {is_paper_trade_on}, evaluation_hours: {evaluation_hours}")
             timestamp_earliest = (datetime.now() -
@@ -453,8 +497,8 @@ class TradeStats:
             if _can_we_revert_paper_trade_setting(record_count, percent_win, is_paper_trade_on):
                 old_paper_trade_setting = is_paper_trade_on
                 new_paper_trade_setting = not is_paper_trade_on
-                paper_trade_settings[market_slug] = new_paper_trade_setting
-                Config.save_paper_trade_settings(paper_trade_settings)
+                market_settings[market_slug]["paper_trade"] = new_paper_trade_setting
+                Config._save_all_market_settings(market_settings)
                 subject = (
                     f"polymarket_bot: Paper Trade setting for {market_slug} "
                     f"changed to {new_paper_trade_setting} | "

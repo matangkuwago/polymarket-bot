@@ -53,6 +53,19 @@ class Config:
     PAPER_TRADE_EVALUATION_HOURS = float(
         os.getenv("PAPER_TRADE_EVALUATION_HOURS", 4.0))
 
+    # market settings
+    MARKET_SETTINGS_OVERRIDE_URL = os.getenv(
+        "MARKET_SETTINGS_OVERRIDE_URL", "")
+    MARKET_SETTINGS_FILE = os.getenv(
+        "MARKET_SETTINGS_FILE", "market_config.json")
+    MARKET_SETTINGS_DEFAULT = {
+        "paper_trade_evaluation_mode": "dynamic",
+        "paper_trade": True,
+        "evaluation_count": os.getenv("PAPER_TRADE_MIN_EVALUATION_COUNT", 40),
+        "evaluation_hours": float(
+            os.getenv("PAPER_TRADE_EVALUATION_HOURS", 4.0)),
+    }
+
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
     LOGGER_NAME = "polymarket.bot"
@@ -101,7 +114,27 @@ class Config:
 
     @classmethod
     def get_paper_trade_settings(cls, settings_file: str = None):
-        json_file = cls.PAPER_TRADE_SETTINGS_FILE if settings_file is None else settings_file
+        market_settings = Config._get_all_market_settings(settings_file)
+        result = {}
+        for market_slug, settings in market_settings.items():
+            result[market_slug] = settings["paper_trade"]
+        return result
+
+    @classmethod
+    def get_paper_trade_setting(cls, market_slug: str):
+        settings = Config.get_market_settings(market_slug)
+        return settings["paper_trade"]
+
+    @classmethod
+    def save_paper_trade_settings(cls, settings_json: dict, settings_file: str = None):
+        for market in settings_json:
+            market_settings = Config.get_market_settings(market)
+            market_settings[market]["paper_trade"] = settings_json[market]
+            Config.save_market_settings(market, market_settings)
+
+    @classmethod
+    def _get_all_market_settings(cls, settings_file: str = None):
+        json_file = cls.MARKET_SETTINGS_FILE if settings_file is None else settings_file
         try:
             with open(json_file, 'r') as f:
                 data = json.load(f)
@@ -112,15 +145,29 @@ class Config:
             return {}
 
     @classmethod
-    def get_paper_trade_setting(cls, market_slug: str, settings_file: str = None):
-        settings = cls.get_paper_trade_settings()
-        if market_slug not in settings:
-            raise KeyError(
-                f"{market_slug} not found in paper trade settings!")
-        return settings[market_slug]
+    def get_market_settings(cls, market: str, settings_file: str = None):
+        json_file = cls.MARKET_SETTINGS_FILE if settings_file is None else settings_file
+        try:
+            with open(json_file, 'r') as f:
+                data = json.load(f)
+            if market in data:
+                return data[market]
+            return dict(cls.MARKET_SETTINGS_DEFAULT)
+        except FileNotFoundError as e:
+            return dict(cls.MARKET_SETTINGS_DEFAULT)
+        except json.JSONDecodeError:
+            return dict(cls.MARKET_SETTINGS_DEFAULT)
 
     @classmethod
-    def save_paper_trade_settings(cls, settings_json: dict, settings_file: str = None):
-        json_file = cls.PAPER_TRADE_SETTINGS_FILE if settings_file is None else settings_file
+    def _save_all_market_settings(cls, settings: dict, settings_file: str = None):
+        json_file = cls.MARKET_SETTINGS_FILE if settings_file is None else settings_file
         with open(json_file, 'w') as f:
-            json.dump(settings_json, f, indent=4)
+            json.dump(settings, f, indent=4)
+
+    @classmethod
+    def save_market_settings(cls, market: str, settings: dict, settings_file: str = None):
+        json_file = cls.MARKET_SETTINGS_FILE if settings_file is None else settings_file
+        all_market_settings = cls._get_all_market_settings(json_file)
+        market_settings = cls.MARKET_SETTINGS_DEFAULT | settings
+        all_market_settings[market] = market_settings
+        cls._save_all_market_settings(all_market_settings)
