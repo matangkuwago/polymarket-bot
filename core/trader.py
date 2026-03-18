@@ -472,6 +472,12 @@ class TradeStats:
             is_dynamic = str(
                 market_settings[market_slug]["paper_trade_evaluation_mode"]).lower() == "dynamic"
             if not is_dynamic:
+                self.logger.info(
+                    f"\n------------------------------\n"
+                    f"Paper Trade setting for {market_slug} will be kept to {is_paper_trade_on}.\n"
+                    f"is_dynamic {is_dynamic}\n"
+                    f"------------------------------\n"
+                )
                 continue
 
             evaluation_hours = market_settings[market_slug]["evaluation_hours"]
