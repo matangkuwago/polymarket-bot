@@ -47,11 +47,11 @@ class Config:
     # Paper Trade settings
     PAPER_TRADE_SETTINGS_FILE = "paper_trade.json"
     PAPER_TRADE_MIN_EVALUATION_COUNT = int(
-        os.getenv("PAPER_TRADE_MIN_EVALUATION_COUNT", 20))
+        os.getenv("PAPER_TRADE_MIN_EVALUATION_COUNT", 40))
     PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD = float(
-        os.getenv("PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD", 0.52))
+        os.getenv("PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD", 0.55))
     PAPER_TRADE_EVALUATION_HOURS = float(
-        os.getenv("PAPER_TRADE_EVALUATION_HOURS", 2.0))
+        os.getenv("PAPER_TRADE_EVALUATION_HOURS", 4.0))
 
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()

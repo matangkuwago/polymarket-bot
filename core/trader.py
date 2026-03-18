@@ -442,12 +442,14 @@ class TradeStats:
                 continue
 
             record_count = trade_stats[market_slug]["record_count"]
-            num_unmatched_wins = trade_stats[market_slug]["num_unmatched_wins"]
-            num_won = trade_stats[market_slug]["num_won"] - num_unmatched_wins
-            num_wins = num_won - num_unmatched_wins
+            wins = trade_stats[market_slug]["num_won"]
+            unmatched_wins = trade_stats[market_slug]["num_unmatched_wins"]
+            wins_wo_unmatched = wins - unmatched_wins
             if record_count == 0:
                 return
-            percent_win = float(num_wins/record_count)
+            percent_win = trade_stats[market_slug]["percent"]
+            percent_win_wo_unmatched = float(
+                wins_wo_unmatched/record_count)
             if _can_we_revert_paper_trade_setting(record_count, percent_win, is_paper_trade_on):
                 old_paper_trade_setting = is_paper_trade_on
                 new_paper_trade_setting = not is_paper_trade_on
@@ -465,9 +467,10 @@ class TradeStats:
                     f"min_count {Config.PAPER_TRADE_MIN_EVALUATION_COUNT}\n"
                     f"evaluation_hours: {evaluation_hours}\n"
                     f"record_count: {record_count}\n"
-                    f"num_wins: {num_won}\n"
-                    f"num_wins - unmatched wins: {num_wins}\n"
+                    f"wins: {wins}\n"
+                    f"wins w/o unmatched: {wins_wo_unmatched}\n"
                     f"percent_win: {percent_win*100:.2f}%\n"
+                    f"percent_win w/o unmatched: {percent_win_wo_unmatched*100:.2f}%\n"
                 )
                 self.logger.info(subject)
                 self.logger.info(mail_content)
@@ -479,9 +482,10 @@ class TradeStats:
                     f"min_count {Config.PAPER_TRADE_MIN_EVALUATION_COUNT}\n"
                     f"evaluation_hours: {evaluation_hours}\n"
                     f"record_count: {record_count}\n"
-                    f"num_wins: {num_won}\n"
-                    f"num_wins - unmatched wins: {num_wins}\n"
+                    f"wins: {wins}\n"
+                    f"wins w/o unmatched: {wins_wo_unmatched}\n"
                     f"percent_win: {percent_win*100:.2f}%\n"
+                    f"percent_win w/o unmatched: {percent_win_wo_unmatched*100:.2f}%\n"
                     f"------------------------------\n"
                 )
         self.logger.info(f"evaluate_paper_trade_settings_change end")
@@ -543,7 +547,7 @@ class TradeStats:
         email_lines += [self._tabulate_results("All",
                                                self.get_statistics())]
 
-        hours = [2, 3, 4, 8, 24]
+        hours = [2.5, 4, 8, 24]
         for hour in hours:
             date_limit = datetime.now() - timedelta(hours=hour)
             timestamp = date_limit.timestamp()
