@@ -448,17 +448,19 @@ class TradeStats:
     def evaluate_paper_trade_settings_change(self):
         def _can_we_revert_paper_trade_setting(record_count: int,
                                                percent_win: float,
-                                               is_paper_trade_on: bool):
+                                               is_paper_trade_on: bool,
+                                               evaluation_count: int,
+                                               evaluation_percent: float):
             if is_paper_trade_on:
-                if (record_count >= Config.PAPER_TRADE_MIN_EVALUATION_COUNT and
-                        percent_win >= Config.PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD):
+                if (record_count >= evaluation_count and
+                        percent_win >= evaluation_percent):
                     return True
 
             if not is_paper_trade_on:
-                if record_count < Config.PAPER_TRADE_MIN_EVALUATION_COUNT:
+                if record_count < evaluation_count:
                     return True
 
-                if percent_win < Config.PAPER_TRADE_EVALUATION_PERCENT_THRESHOLD:
+                if percent_win < evaluation_percent:
                     return True
             return False
 
@@ -468,7 +470,6 @@ class TradeStats:
         self.logger.info(f"market_settings {market_settings}")
         for market_slug in market_settings.keys():
             is_paper_trade_on = market_settings[market_slug]["paper_trade"]
-
             is_dynamic = str(
                 market_settings[market_slug]["paper_trade_evaluation_mode"]).lower() == "dynamic"
             if not is_dynamic:
@@ -480,6 +481,8 @@ class TradeStats:
                 )
                 continue
 
+            evaluation_percent = market_settings[market_slug]["evaluation_percent"]
+            evaluation_count = market_settings[market_slug]["evaluation_count"]
             evaluation_hours = market_settings[market_slug]["evaluation_hours"]
             self.logger.info(
                 f"market_slug: {market_slug}, paper_trade: {is_paper_trade_on}, evaluation_hours: {evaluation_hours}")
@@ -500,7 +503,13 @@ class TradeStats:
             percent_win = trade_stats[market_slug]["percent"]
             percent_win_wo_unmatched = float(
                 wins_wo_unmatched/record_count)
-            if _can_we_revert_paper_trade_setting(record_count, percent_win, is_paper_trade_on):
+            if _can_we_revert_paper_trade_setting(
+                record_count,
+                percent_win,
+                is_paper_trade_on,
+                evaluation_count,
+                evaluation_percent
+            ):
                 old_paper_trade_setting = is_paper_trade_on
                 new_paper_trade_setting = not is_paper_trade_on
                 market_settings[market_slug]["paper_trade"] = new_paper_trade_setting
@@ -514,8 +523,9 @@ class TradeStats:
                     f"market_slug: {market_slug}\n"
                     f"old_paper_trade_setting: {old_paper_trade_setting}\n"
                     f"new_paper_trade_setting: {new_paper_trade_setting}\n"
-                    f"min_count {Config.PAPER_TRADE_MIN_EVALUATION_COUNT}\n"
+                    f"evaluation_count {evaluation_count}\n"
                     f"evaluation_hours: {evaluation_hours}\n"
+                    f"evaluation_percent: {evaluation_percent}\n"
                     f"record_count: {record_count}\n"
                     f"wins: {wins}\n"
                     f"wins w/o unmatched: {wins_wo_unmatched}\n"
@@ -529,8 +539,9 @@ class TradeStats:
                 self.logger.info(
                     f"\n------------------------------\n"
                     f"Paper Trade setting for {market_slug} will be kept to {is_paper_trade_on}.\n"
-                    f"min_count {Config.PAPER_TRADE_MIN_EVALUATION_COUNT}\n"
+                    f"evaluation_count {evaluation_count}\n"
                     f"evaluation_hours: {evaluation_hours}\n"
+                    f"evaluation_percent: {evaluation_percent}\n"
                     f"record_count: {record_count}\n"
                     f"wins: {wins}\n"
                     f"wins w/o unmatched: {wins_wo_unmatched}\n"
@@ -597,7 +608,7 @@ class TradeStats:
         email_lines += [self._tabulate_results("All",
                                                self.get_statistics())]
 
-        hours = [2.5, 4, 8, 24]
+        hours = [3, 4, 8, 24]
         for hour in hours:
             date_limit = datetime.now() - timedelta(hours=hour)
             timestamp = date_limit.timestamp()
