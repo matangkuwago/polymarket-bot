@@ -375,11 +375,13 @@ class TradeStats:
     def get_trade_files(self):
         return self.trade_files
 
-    def get_statistics(self, timestamp_earliest: int = None):
+    def get_statistics(self, start_ts: int = None, end_ts: int = None):
+        time_start = 0 if start_ts is None else start_ts
+        time_end = datetime.now().timestamp() if end_ts is None else end_ts
         trade_stats = {}
         for trade_item in self.trade_files:
             timestamp = trade_item["timestamp"]
-            if timestamp_earliest and timestamp < timestamp_earliest:
+            if not (time_start <= timestamp and timestamp <= time_end):
                 continue
             trade = trade_item["trade"]
             market_slug = trade.market_slug[:-11]
@@ -486,9 +488,9 @@ class TradeStats:
             evaluation_hours = market_settings[market_slug]["evaluation_hours"]
             self.logger.info(
                 f"market_slug: {market_slug}, paper_trade: {is_paper_trade_on}, evaluation_hours: {evaluation_hours}")
-            timestamp_earliest = (datetime.now() -
-                                  timedelta(hours=evaluation_hours)).timestamp()
-            trade_stats = self.get_statistics(timestamp_earliest)
+            start_ts = (datetime.now() -
+                        timedelta(hours=evaluation_hours)).timestamp()
+            trade_stats = self.get_statistics(start_ts=start_ts)
             if not trade_stats:
                 self.logger.info(
                     f"No trade records found yet for evaluating {market_slug}.")
@@ -620,7 +622,7 @@ class TradeStats:
             date_limit = datetime.now() - timedelta(hours=hour)
             timestamp = date_limit.timestamp()
             email_lines += [self._tabulate_results(f"{hour}H",
-                                                   self.get_statistics(timestamp))]
+                                                   self.get_statistics(start_ts=timestamp))]
 
         subject = f"polymarket_bot: stats | {int(datetime.now().timestamp())}"
         mail_content = "".join(email_lines)
