@@ -36,6 +36,7 @@ def main():
                     trade_stats_data[date_string][_hour][market_slug]["num_won"] += 1
 
     headers = ["time", "btc", "eth", "xrp", "sol"]
+    line_border = ["-"*21]*5
     table_data = []
     dates = list(trade_stats_data.keys())
     dates.sort()
@@ -56,6 +57,7 @@ def main():
                 _row_data.append(percent)
             if _row_data:
                 table_data.append([date_string] + _row_data)
+                table_data.append(line_border)
     table_text = tabulate(table_data, headers=headers, tablefmt="html")
     subject = f"polymarket_bot: stats per hour | {int(datetime.now().timestamp())}"
     mail_content = "".join(table_text)
