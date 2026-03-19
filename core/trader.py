@@ -566,10 +566,14 @@ class TradeStats:
             results.items(), key=lambda x: x[1]["percent"], reverse=True)
         count_total = 0
         wins_total = 0
+        count_wo_unmatched_wins = 0
+        count_total_wo_unmatched_wins = 0
         matched_wins_total = 0
         for market, result in results_sorted:
             count = result['record_count']
+            count_wo_unmatched_wins = result['record_count']
             count_total += count
+            count_total_wo_unmatched_wins += count_wo_unmatched_wins
             wins = result['num_won']
             wins_total += wins
             percent = f"{result['percent']*100:.2f}%"
@@ -578,9 +582,12 @@ class TradeStats:
 
             if count > 0 and result['num_unmatched_wins'] > 0:
                 matched_wins = wins - result['num_unmatched_wins']
+                count_wo_unmatched_wins -= result['num_unmatched_wins']
+                count_total_wo_unmatched_wins -= result['num_unmatched_wins']
                 matched_wins_total += matched_wins
-                matched_wins_percent = float(matched_wins / count)
-                data.append(["matched", count, matched_wins,
+                matched_wins_percent = float(
+                    matched_wins / count_wo_unmatched_wins)
+                data.append(["matched", count_wo_unmatched_wins, matched_wins,
                             f"{matched_wins_percent*100:.2f}%"])
             else:
                 matched_wins_total += wins
@@ -590,8 +597,8 @@ class TradeStats:
             data.append(["total", count_total, wins_total,
                         f"{100*wins_total/count_total:.2f}%"])
             if matched_wins_total > 0:
-                data.append(["matched", count_total,
-                            matched_wins_total, f"{100*matched_wins_total/count_total:.2f}%"])
+                data.append(["matched", count_total_wo_unmatched_wins,
+                            matched_wins_total, f"{100*matched_wins_total/count_total_wo_unmatched_wins:.2f}%"])
             data.append(["-"*11, "-"*11, "-"*11, "-"*11])
 
         return (
@@ -608,7 +615,7 @@ class TradeStats:
         email_lines += [self._tabulate_results("All",
                                                self.get_statistics())]
 
-        hours = [3, 4, 8, 24]
+        hours = [4, 8, 24]
         for hour in hours:
             date_limit = datetime.now() - timedelta(hours=hour)
             timestamp = date_limit.timestamp()
