@@ -571,6 +571,7 @@ class TradeStats:
         count_wo_unmatched_wins = 0
         count_total_wo_unmatched_wins = 0
         matched_wins_total = 0
+        line_border = ["-"*11]*4
         for market, result in results_sorted:
             count = result['record_count']
             count_wo_unmatched_wins = result['record_count']
@@ -579,7 +580,7 @@ class TradeStats:
             wins = result['num_won']
             wins_total += wins
             percent = f"{result['percent']*100:.2f}%"
-            data.append(["-"*11, "-"*11, "-"*11, "-"*11])
+            data.append(line_border)
             data.append([market[:3], count, wins, percent])
 
             if count > 0 and result['num_unmatched_wins'] > 0:
@@ -595,13 +596,13 @@ class TradeStats:
                 matched_wins_total += wins
 
         if count_total > 0:
-            data.append(["-"*11, "-"*11, "-"*11, "-"*11])
+            data.append(line_border)
             data.append(["total", count_total, wins_total,
                         f"{100*wins_total/count_total:.2f}%"])
             if matched_wins_total > 0:
                 data.append(["matched", count_total_wo_unmatched_wins,
                             matched_wins_total, f"{100*matched_wins_total/count_total_wo_unmatched_wins:.2f}%"])
-            data.append(["-"*11, "-"*11, "-"*11, "-"*11])
+            data.append(line_border)
 
         return (
             f"{TradeStats._format_table_title(table_title, format)}" +
@@ -617,7 +618,7 @@ class TradeStats:
         email_lines += [self._tabulate_results("All",
                                                self.get_statistics())]
 
-        hours = [4, 8, 24]
+        hours = [1, 4, 8, 24]
         for hour in hours:
             date_limit = datetime.now() - timedelta(hours=hour)
             timestamp = date_limit.timestamp()
