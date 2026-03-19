@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from tabulate import tabulate
 from core.trader import TradeStats
+from core.utilities import Emailer
 
 
 def main():
@@ -55,8 +56,11 @@ def main():
                 _row_data.append(percent)
             if _row_data:
                 table_data.append([date_string] + _row_data)
-    table_text = tabulate(table_data, headers=headers, tablefmt="text")
-    print(table_text)
+    table_text = tabulate(table_data, headers=headers, tablefmt="html")
+    subject = f"polymarket_bot: stats per hour | {int(datetime.now().timestamp())}"
+    mail_content = "".join(table_text)
+    Emailer.send_email(subject, mail_content=mail_content,
+                       mail_content_html=mail_content)
 
 
 if __name__ == "__main__":
