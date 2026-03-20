@@ -9,6 +9,11 @@ def main():
     trade_stats_data = {}
     trade_stats = TradeStats()
     trade_files = trade_stats.get_trade_files()
+
+    if not trade_files:
+        print(f"No data to process.")
+        exit(0)
+
     trade_files = sorted(
         trade_files, key=lambda x: x["timestamp"], reverse=True)
     for trade_item in trade_files:
@@ -59,7 +64,7 @@ def main():
                 table_data.append([date_string] + _row_data)
                 table_data.append(line_border)
     table_text = tabulate(table_data, headers=headers, tablefmt="html")
-    subject = f"polymarket_bot: stats per hour | {int(datetime.now().timestamp())}"
+    subject = f"polymarket_bot: per hour | {int(datetime.now().timestamp())}"
     mail_content = "".join(table_text)
     Emailer.send_email(subject, mail_content=mail_content,
                        mail_content_html=mail_content)
