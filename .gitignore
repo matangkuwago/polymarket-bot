@@ -212,3 +212,4 @@ trades_processed
 .DS_Store
 market_config.json
 _tmp_*.*
+screenlog.*
