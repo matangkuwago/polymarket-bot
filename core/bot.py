@@ -149,7 +149,11 @@ class Polymarket5MinuteBot:
         predict_url = Config.PREDICTION_API_ENDPOINT
         auth_token = Config.PREDICTION_API_TOKEN
         headers = {'Authorization': f'Bearer {auth_token}'}
-        data = {"price_history": prediction_input}
+        data = {
+            "ticker": self.polymarket_slug_prefix[:3],
+            "price_history": prediction_input,
+            "num_predictions": num_predictions,
+        }
         # send prediction request
         response = requests.post(predict_url, json=data, headers=headers)
         status_code = 404
