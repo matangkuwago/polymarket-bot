@@ -14,8 +14,6 @@ from core.utilities import Emailer, setup_logging
 
 class Polymarket5MinuteBot:
     market_timestamp_interval_seconds = 300
-    entry_price = Config.TRADE_ENTRY_PRICE
-    order_size = Config.TRADE_ORDER_SIZE
 
     def __init__(self, polymarket_slug_prefix: str, binance_ticker: str):
         self.polymarket_slug_prefix = polymarket_slug_prefix
@@ -25,20 +23,19 @@ class Polymarket5MinuteBot:
         self.logger = setup_logging(f'{self.polymarket_slug_prefix}.log')
 
         # get paper trade settings
-        paper_trade_settings = Config.get_paper_trade_settings()
-        if self.polymarket_slug_prefix not in paper_trade_settings:
-            error_message = f"Paper trade settings not found for {self.polymarket_slug_prefix}!"
-            self.logger.error(error_message)
-            raise KeyError(error_message)
-        self.paper_trade = paper_trade_settings[self.polymarket_slug_prefix]
+        self.save_override_settings_online()
+        market_settings = Config.get_market_settings(
+            self.polymarket_slug_prefix)
         self.logger.info(
-            f"PAPER TRADE setting for {self.polymarket_slug_prefix}: {self.paper_trade}")
+            f"market_settings for {self.polymarket_slug_prefix}: {market_settings}")
+        self.paper_trade = market_settings["paper_trade"]
+        self.entry_price = market_settings["entry_price"]
+        self.order_size = market_settings["order_size"]
 
     async def run(self):
         start_time = time.time()
         self.logger.info(
             f"polymarket_bot run started | {self.polymarket_slug_prefix}")
-        self.save_override_settings_online()
         await self.load_binance_price_history()
         await self.load_polymarket_price_history()
         predictions = await self.get_predictions()
@@ -66,6 +63,8 @@ class Polymarket5MinuteBot:
             online_settings[market] = dict(Config.MARKET_SETTINGS_DEFAULT)
             online_settings[market]["paper_trade"] = str(
                 line[1]).lower() == "true"
+            online_settings[market]["entry_price"] = float(line[2])
+            online_settings[market]["order_size"] = float(line[3])
 
         if online_settings:
             self.logger.info(

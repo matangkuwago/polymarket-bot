@@ -60,6 +60,8 @@ class Config:
         "MARKET_SETTINGS_FILE", "market_config.json")
     MARKET_SETTINGS_DEFAULT = {
         "paper_trade": True,
+        "entry_price": 0.49,
+        "order_size": 5,
     }
 
     # Logging
@@ -69,8 +71,6 @@ class Config:
     # Trade settings
     TRADE_RECORDS_DIR: str = "trades"
     TRADE_RECORDS_PROCESSED_DIR: str = "trades_processed"
-    TRADE_ENTRY_PRICE: float = float(os.getenv("TRADE_ENTRY_PRICE", 0.49))
-    TRADE_ORDER_SIZE: float = float(os.getenv("TRADE_ORDER_SIZE", 5.0))
     TRADE_ORDER_EXPIRATION: int = int(os.getenv("TRADE_ORDER_EXPIRATION", 210))
     TRADE_MAX_RECORDS_UPDATE: int = int(
         os.getenv("TRADE_MAX_RECORDS_UPDATE", 50))
