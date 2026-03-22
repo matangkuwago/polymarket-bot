@@ -1,15 +1,9 @@
-import csv
-import io
 import json
 import os
-import requests as rs
 import time
 import logging
-from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
 from glob import glob
-from tabulate import tabulate
-from typing import cast
 from core.config import Config
 from core.polymarket import Market, PolymarketClient
 from core.utilities import Emailer, setup_logging
@@ -376,257 +370,28 @@ class TradeStats:
         return self.trade_files
 
     def get_statistics(self, start_ts: int = None, end_ts: int = None):
-        time_start = 0 if start_ts is None else start_ts
-        time_end = datetime.now().timestamp() if end_ts is None else end_ts
         trade_stats = {}
         for trade_item in self.trade_files:
             timestamp = trade_item["timestamp"]
-            if not (time_start <= timestamp and timestamp <= time_end):
+            if (start_ts and timestamp < start_ts) or (end_ts and end_ts < timestamp):
                 continue
             trade = trade_item["trade"]
             market_slug = trade.market_slug[:-11]
             if market_slug not in trade_stats:
                 trade_stats[market_slug] = {
                     "record_count": 0,
-                    "num_won": 0,
-                    "num_unmatched": 0,
-                    "num_unmatched_wins": 0,
+                    "wins": 0,
+                    "matched": 0,
+                    "matched_wins": 0,
                 }
 
             trade_stats[market_slug]["record_count"] += 1
-            if not trade.paper_trade and trade.order_status != "MATCHED":
-                trade_stats[market_slug]["num_unmatched"] += 1
+            if trade.order_status == "MATCHED":
+                trade_stats[market_slug]["matched"] += 1
                 if trade.won:
-                    trade_stats[market_slug]["num_unmatched_wins"] += 1
-            if trade.won:
-                trade_stats[market_slug]["num_won"] += 1
+                    trade_stats[market_slug]["matched_wins"] += 1
 
-        for market_slug in trade_stats:
-            trade_stats[market_slug]["percent"] = float(
-                trade_stats[market_slug]["num_won"] /
-                trade_stats[market_slug]["record_count"]
-            )
+            if trade.won:
+                trade_stats[market_slug]["wins"] += 1
 
         return trade_stats
-
-    def save_override_settings_online(self):
-
-        csv_url = Config.MARKET_SETTINGS_OVERRIDE_URL
-        self.logger.info(f"Getting market settings online: {csv_url}")
-        response = rs.get(url=csv_url)
-        csv_content_response = response.content.decode('utf-8')
-        csv_contents = csv.reader(io.StringIO(csv_content_response))
-
-        online_settings = {}
-
-        next(csv_contents)
-        for line in csv_contents:
-            market = line[0]
-            online_settings[market] = dict(Config.MARKET_SETTINGS_DEFAULT)
-            online_settings[market]["paper_trade_evaluation_mode"] = line[1]
-            online_settings[market]["paper_trade"] = str(
-                line[2]).lower() == "true"
-            online_settings[market]["evaluation_count"] = int(line[3])
-            online_settings[market]["evaluation_hours"] = float(line[4])
-            online_settings[market]["evaluation_percent"] = float(line[5])
-
-        if online_settings:
-            self.logger.info(
-                f"Online market settings retrieved online: {json.dumps(online_settings, indent=4)}")
-            local_market_settings = Config._get_all_market_settings()
-            for market in online_settings.keys():
-                if market not in local_market_settings:
-                    local_market_settings[market] = dict(
-                        online_settings[market])
-                else:
-                    if online_settings[market]["paper_trade_evaluation_mode"] == "dynamic":
-                        # retain local paper_trade config since another function is using this for evaluation
-                        online_settings[market]["paper_trade"] = local_market_settings[market]["paper_trade"]
-                    local_market_settings[market] = local_market_settings[market] | online_settings[market]
-            Config._save_all_market_settings(local_market_settings)
-            self.logger.info(
-                f"Saved market settings: {json.dumps(local_market_settings, indent=4)}")
-
-    def evaluate_paper_trade_settings_change(self):
-        def _can_we_revert_paper_trade_setting(record_count: int,
-                                               percent_win: float,
-                                               is_paper_trade_on: bool,
-                                               evaluation_count: int,
-                                               evaluation_percent: float):
-            if is_paper_trade_on:
-                if (record_count >= evaluation_count and
-                        percent_win >= evaluation_percent):
-                    return True
-
-            if not is_paper_trade_on:
-                if record_count < evaluation_count:
-                    return True
-
-                if percent_win < evaluation_percent:
-                    return True
-            return False
-
-        self.logger.info(f"evaluate_paper_trade_settings_change start")
-        self.save_override_settings_online()
-        market_settings = Config._get_all_market_settings()
-        self.logger.info(f"market_settings {market_settings}")
-        for market_slug in market_settings.keys():
-            is_paper_trade_on = market_settings[market_slug]["paper_trade"]
-            is_dynamic = str(
-                market_settings[market_slug]["paper_trade_evaluation_mode"]).lower() == "dynamic"
-            if not is_dynamic:
-                self.logger.info(
-                    f"\n------------------------------\n"
-                    f"Paper Trade setting for {market_slug} will be kept to {is_paper_trade_on}.\n"
-                    f"is_dynamic {is_dynamic}\n"
-                    f"------------------------------\n"
-                )
-                continue
-
-            evaluation_percent = market_settings[market_slug]["evaluation_percent"]
-            evaluation_count = market_settings[market_slug]["evaluation_count"]
-            evaluation_hours = market_settings[market_slug]["evaluation_hours"]
-            self.logger.info(
-                f"market_slug: {market_slug}, paper_trade: {is_paper_trade_on}, evaluation_hours: {evaluation_hours}")
-            start_ts = (datetime.now() -
-                        timedelta(hours=evaluation_hours)).timestamp()
-            trade_stats = self.get_statistics(start_ts=start_ts)
-            if not trade_stats:
-                self.logger.info(
-                    f"No trade records found yet for evaluating {market_slug}.")
-                continue
-
-            record_count = trade_stats[market_slug]["record_count"]
-            wins = trade_stats[market_slug]["num_won"]
-            unmatched_wins = trade_stats[market_slug]["num_unmatched_wins"]
-            wins_wo_unmatched = wins - unmatched_wins
-            if record_count == 0:
-                return
-            percent_win = trade_stats[market_slug]["percent"]
-            percent_win_wo_unmatched = float(
-                wins_wo_unmatched/record_count)
-            if _can_we_revert_paper_trade_setting(
-                record_count,
-                percent_win,
-                is_paper_trade_on,
-                evaluation_count,
-                evaluation_percent
-            ):
-                old_paper_trade_setting = is_paper_trade_on
-                new_paper_trade_setting = not is_paper_trade_on
-                market_settings[market_slug]["paper_trade"] = new_paper_trade_setting
-                Config._save_all_market_settings(market_settings)
-                subject = (
-                    f"polymarket_bot: Paper Trade setting for {market_slug} "
-                    f"changed to {new_paper_trade_setting} | "
-                    f"{int(datetime.now().timestamp())}"
-                )
-                mail_content = (
-                    f"market_slug: {market_slug}\n"
-                    f"old_paper_trade_setting: {old_paper_trade_setting}\n"
-                    f"new_paper_trade_setting: {new_paper_trade_setting}\n"
-                    f"evaluation_count {evaluation_count}\n"
-                    f"evaluation_hours: {evaluation_hours}\n"
-                    f"evaluation_percent: {evaluation_percent}\n"
-                    f"record_count: {record_count}\n"
-                    f"wins: {wins}\n"
-                    f"wins w/o unmatched: {wins_wo_unmatched}\n"
-                    f"percent_win: {percent_win*100:.2f}%\n"
-                    f"percent_win w/o unmatched: {percent_win_wo_unmatched*100:.2f}%\n"
-                )
-                self.logger.info(subject)
-                self.logger.info(mail_content)
-                Emailer.send_email(subject, mail_content)
-            else:
-                self.logger.info(
-                    f"\n------------------------------\n"
-                    f"Paper Trade setting for {market_slug} will be kept to {is_paper_trade_on}.\n"
-                    f"evaluation_count {evaluation_count}\n"
-                    f"evaluation_hours: {evaluation_hours}\n"
-                    f"evaluation_percent: {evaluation_percent}\n"
-                    f"record_count: {record_count}\n"
-                    f"wins: {wins}\n"
-                    f"wins w/o unmatched: {wins_wo_unmatched}\n"
-                    f"percent_win: {percent_win*100:.2f}%\n"
-                    f"percent_win w/o unmatched: {percent_win_wo_unmatched*100:.2f}%\n"
-                    f"------------------------------\n"
-                )
-        self.logger.info(f"evaluate_paper_trade_settings_change end")
-
-    @staticmethod
-    def _format_table_title(title, format):
-        if format == "html":
-            return f"<br/><h4>{title}</h4>"
-
-        return f"\n\n{title}:\n"
-
-    @staticmethod
-    def _tabulate_results(table_title: str, results: dict, format: str = "html"):
-        data = []
-        headers = ["Market", "Count", "Wins", "%"]
-        results_sorted = sorted(
-            results.items(), key=lambda x: x[1]["percent"], reverse=True)
-        count_total = 0
-        wins_total = 0
-        count_wo_unmatched_wins = 0
-        count_total_wo_unmatched_wins = 0
-        matched_wins_total = 0
-        line_border = ["-"*11]*4
-        for market, result in results_sorted:
-            count = result['record_count']
-            count_wo_unmatched_wins = result['record_count']
-            count_total += count
-            count_total_wo_unmatched_wins += count_wo_unmatched_wins
-            wins = result['num_won']
-            wins_total += wins
-            percent = f"{result['percent']*100:.2f}%"
-            data.append(line_border)
-            data.append([market[:3], count, wins, percent])
-
-            if count > 0 and result['num_unmatched_wins'] > 0:
-                matched_wins = wins - result['num_unmatched_wins']
-                count_wo_unmatched_wins -= result['num_unmatched_wins']
-                count_total_wo_unmatched_wins -= result['num_unmatched_wins']
-                matched_wins_total += matched_wins
-                matched_wins_percent = float(
-                    matched_wins / count_wo_unmatched_wins)
-                data.append(["matched", count_wo_unmatched_wins, matched_wins,
-                            f"{matched_wins_percent*100:.2f}%"])
-            else:
-                matched_wins_total += wins
-
-        if count_total > 0:
-            data.append(line_border)
-            data.append(["total", count_total, wins_total,
-                        f"{100*wins_total/count_total:.2f}%"])
-            if matched_wins_total > 0:
-                data.append(["matched", count_total_wo_unmatched_wins,
-                            matched_wins_total, f"{100*matched_wins_total/count_total_wo_unmatched_wins:.2f}%"])
-            data.append(line_border)
-
-        return (
-            f"{TradeStats._format_table_title(table_title, format)}" +
-            tabulate(data, headers=headers, tablefmt=format)
-        )
-
-    def send_stats_email(self):
-        if not self.trade_files:
-            self.logger.info("No trade records found.")
-            return
-
-        email_lines = []
-        email_lines += [self._tabulate_results("All",
-                                               self.get_statistics())]
-
-        hours = [1, 4, 8, 24]
-        for hour in hours:
-            date_limit = datetime.now() - timedelta(hours=hour)
-            timestamp = date_limit.timestamp()
-            email_lines += [self._tabulate_results(f"{hour}H",
-                                                   self.get_statistics(start_ts=timestamp))]
-
-        subject = f"polymarket_bot: stats | {int(datetime.now().timestamp())}"
-        mail_content = "".join(email_lines)
-
-        Emailer.send_email(subject, mail_content=mail_content,
-                           mail_content_html=mail_content)

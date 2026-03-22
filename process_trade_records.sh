@@ -13,7 +13,6 @@ trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 touch $LOCK_FILE
 
 python update_trade_records.py
-python evaluate_paper_trade_settings.py
 
 elapsed_time=$(($SECONDS - $start_time))
 echo "Elapsed time: $elapsed_time"

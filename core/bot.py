@@ -1,8 +1,8 @@
 import asyncio
-import logging
+import io
+import csv
 import requests
 import json
-import sys
 import time
 from binance import AsyncClient
 from datetime import datetime, timedelta
@@ -38,6 +38,7 @@ class Polymarket5MinuteBot:
         start_time = time.time()
         self.logger.info(
             f"polymarket_bot run started | {self.polymarket_slug_prefix}")
+        self.save_override_settings_online()
         await self.load_binance_price_history()
         await self.load_polymarket_price_history()
         predictions = await self.get_predictions()
@@ -48,6 +49,37 @@ class Polymarket5MinuteBot:
             f"polymarket_bot run ended | {self.polymarket_slug_prefix}")
         self.logger.info(
             f"Total execution time: {end_time - start_time} seconds.")
+
+    def save_override_settings_online(self):
+
+        csv_url = Config.MARKET_SETTINGS_OVERRIDE_URL
+        self.logger.info(f"Getting market settings online: {csv_url}")
+        response = requests.get(url=csv_url)
+        csv_content_response = response.content.decode('utf-8')
+        csv_contents = csv.reader(io.StringIO(csv_content_response))
+
+        online_settings = {}
+
+        next(csv_contents)
+        for line in csv_contents:
+            market = line[0]
+            online_settings[market] = dict(Config.MARKET_SETTINGS_DEFAULT)
+            online_settings[market]["paper_trade"] = str(
+                line[1]).lower() == "true"
+
+        if online_settings:
+            self.logger.info(
+                f"Online market settings retrieved online: {json.dumps(online_settings, indent=4)}")
+            local_market_settings = Config._get_all_market_settings()
+            for market in online_settings.keys():
+                if market not in local_market_settings:
+                    local_market_settings[market] = dict(
+                        online_settings[market])
+                else:
+                    local_market_settings[market] = local_market_settings[market] | online_settings[market]
+            Config._save_all_market_settings(local_market_settings)
+            self.logger.info(
+                f"Saved market settings: {json.dumps(local_market_settings, indent=4)}")
 
     async def load_binance_price_history(self):
         index_timestamp = 0

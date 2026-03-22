@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 from tabulate import tabulate
 from core.trader import TradeStats
@@ -25,20 +24,16 @@ def main():
         date_string = date_object.strftime("%Y-%m-%d")
         if date_string not in trade_stats_data:
             trade_stats_data[date_string] = {x: {} for x in range(0, hour+1)}
-        else:
-            new_value = {x: {} for x in range(
-                0, hour+1)}
-            trade_stats_data[date_string] = new_value | trade_stats_data[date_string]
         for _hour in trade_stats_data[date_string].keys():
             if _hour >= hour:
                 if market_slug not in trade_stats_data[date_string][_hour]:
                     trade_stats_data[date_string][_hour][market_slug] = {
                         "record_count": 0,
-                        "num_won": 0,
+                        "wins": 0,
                     }
                 trade_stats_data[date_string][_hour][market_slug]["record_count"] += 1
                 if trade.won:
-                    trade_stats_data[date_string][_hour][market_slug]["num_won"] += 1
+                    trade_stats_data[date_string][_hour][market_slug]["wins"] += 1
 
     headers = ["time", "btc", "eth", "xrp", "sol"]
     line_border = ["-"*21]*5
@@ -55,11 +50,11 @@ def main():
             for _market in markets:
                 market_slug = f"{_market}-updown-5m"
                 count = trade_stats_data[_date][_hour][market_slug]["record_count"]
-                wins = trade_stats_data[_date][_hour][market_slug]["num_won"]
+                wins = trade_stats_data[_date][_hour][market_slug]["wins"]
                 if not count:
                     continue
-                percent = f"{float(wins / count) * 100:.2f}%"
-                _row_data.append(percent)
+                percent_text = f"{float(wins / count) * 100:.2f}%"
+                _row_data.append(percent_text)
             if _row_data:
                 table_data.append([date_string] + _row_data)
                 table_data.append(line_border)

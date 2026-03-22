@@ -59,11 +59,7 @@ class Config:
     MARKET_SETTINGS_FILE = os.getenv(
         "MARKET_SETTINGS_FILE", "market_config.json")
     MARKET_SETTINGS_DEFAULT = {
-        "paper_trade_evaluation_mode": "dynamic",
         "paper_trade": True,
-        "evaluation_count": os.getenv("PAPER_TRADE_MIN_EVALUATION_COUNT", 40),
-        "evaluation_hours": float(
-            os.getenv("PAPER_TRADE_EVALUATION_HOURS", 4.0)),
     }
 
     # Logging
