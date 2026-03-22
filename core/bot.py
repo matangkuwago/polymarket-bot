@@ -4,6 +4,7 @@ import csv
 import requests
 import json
 import time
+from datetime import datetime
 from binance import AsyncClient
 from datetime import datetime, timedelta
 from core.config import Config
@@ -31,8 +32,21 @@ class Polymarket5MinuteBot:
         self.paper_trade = market_settings["paper_trade"]
         self.entry_price = market_settings["entry_price"]
         self.order_size = market_settings["order_size"]
+        self.start_hour = market_settings["start_hour"]
+        self.end_hour = market_settings["end_hour"]
+
+    def are_we_on_schedule(self):
+        current_hour = datetime.now().hour
+        return self.start_hour <= current_hour and current_hour < self.end_hour
 
     async def run(self):
+        if not self.are_we_on_schedule():
+            self.logger.info(
+                f"{self.polymarket_slug_prefix} is out of schedule: "
+                f"start_hour {self.start_hour}, "
+                f"end_hour {self.end_hour}"
+            )
+            return
         start_time = time.time()
         self.logger.info(
             f"polymarket_bot run started | {self.polymarket_slug_prefix}")
@@ -40,7 +54,6 @@ class Polymarket5MinuteBot:
         await self.load_polymarket_price_history()
         predictions = await self.get_predictions()
         await self.place_orders(predictions, paper_trade=self.paper_trade)
-
         end_time = time.time()
         self.logger.info(
             f"polymarket_bot run ended | {self.polymarket_slug_prefix}")
@@ -65,6 +78,8 @@ class Polymarket5MinuteBot:
                 line[1]).lower() == "true"
             online_settings[market]["entry_price"] = float(line[2])
             online_settings[market]["order_size"] = float(line[3])
+            online_settings[market]["start_hour"] = int(line[4])
+            online_settings[market]["end_hour"] = int(line[5])
 
         if online_settings:
             self.logger.info(

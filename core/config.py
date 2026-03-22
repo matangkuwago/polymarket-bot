@@ -62,6 +62,8 @@ class Config:
         "paper_trade": True,
         "entry_price": 0.49,
         "order_size": 5,
+        "start_hour": 5,
+        "end_hour": 18,
     }
 
     # Logging
