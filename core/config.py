@@ -73,6 +73,7 @@ class Config:
     # Trade settings
     TRADE_RECORDS_DIR: str = "trades"
     TRADE_RECORDS_PROCESSED_DIR: str = "trades_processed"
+    TRADE_RECORDS_ARCHIVE: str = "old_trades"
     TRADE_ORDER_EXPIRATION: int = int(os.getenv("TRADE_ORDER_EXPIRATION", 210))
     TRADE_MAX_RECORDS_UPDATE: int = int(
         os.getenv("TRADE_MAX_RECORDS_UPDATE", 50))

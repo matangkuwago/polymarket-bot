@@ -47,8 +47,8 @@ def _tabulate_results(table_title: str, results: dict, format: str = "html"):
                     f"{100*wins_total/count_total:.2f}%"])
         if matched_total > 0:
             data.append(["matched",
-                         matched_wins_total,
                          matched_total,
+                         matched_wins_total,
                          f"{100*matched_wins_total/matched_total:.2f}%"])
         data.append(line_border)
 

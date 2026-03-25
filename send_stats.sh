@@ -12,8 +12,8 @@ fi
 trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 touch $LOCK_FILE
 
-python get_stats.py
 python get_stats_per_hour.py
+python get_stats.py
 
 elapsed_time=$(($SECONDS - $start_time))
 echo "Elapsed time: $elapsed_time"

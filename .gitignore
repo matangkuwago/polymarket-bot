@@ -213,3 +213,4 @@ trades_processed
 market_config.json
 _tmp_*.*
 screenlog.*
+stats_per_hour.csv

@@ -13,7 +13,7 @@ def mark_trade_as_processed(trade):
     target_file = f"{Config.TRADE_RECORDS_PROCESSED_DIR}/{trade.market_slug}.trade"
     os.rename(source_file, target_file)
     print(
-        f"Trade record for {trade.market_slug} has been moved "
+        f"Trade record has been moved "
         f"from {source_file} to {target_file}."
     )
 
