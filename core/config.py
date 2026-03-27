@@ -66,6 +66,11 @@ class Config:
         "end_hour": 18,
     }
 
+    DAILY_BALANCE_TARGET_PERCENT = float(
+        os.getenv("DAILY_BALANCE_TARGET_PERCENT", "0.02423603793"))
+    DAILY_BALANCE_FILE = os.getenv(
+        "DAILY_BALANCE_FILE", "daily_balance.json")
+
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
     LOGGER_NAME = "polymarket.bot"

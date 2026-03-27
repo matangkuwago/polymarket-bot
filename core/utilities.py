@@ -1,3 +1,4 @@
+import json
 import logging
 import smtplib
 import sys
@@ -90,3 +91,18 @@ def are_bots_on_schedule():
     market_settings = Config._get_all_market_settings()
     return any([x["start_hour"] <= current_hour and current_hour <
                 (x["end_hour"] + end_hour_allowance) for x in market_settings.values()])
+
+
+def load_daily_balance(json_file=Config.DAILY_BALANCE_FILE):
+    try:
+        with open(json_file, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError as e:
+        return {}
+    except json.JSONDecodeError:
+        return {}
+
+
+def save_daily_balance(json_data, json_file=Config.DAILY_BALANCE_FILE):
+    with open(json_file, 'w') as f:
+        json.dump(json_data, f, indent=4)

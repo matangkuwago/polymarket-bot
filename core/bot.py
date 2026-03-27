@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from core.config import Config
 from core.polymarket import PolymarketClient
 from core.trader import LiveTrader
-from core.utilities import Emailer, setup_logging
+from core.utilities import Emailer, setup_logging, load_daily_balance
 
 
 class Polymarket5MinuteBot:
@@ -34,19 +34,31 @@ class Polymarket5MinuteBot:
         self.order_size = market_settings["order_size"]
         self.start_hour = market_settings["start_hour"]
         self.end_hour = market_settings["end_hour"]
+        self.goal_achieved = self.get_goal_achieved()
 
     def are_we_on_schedule(self):
         current_hour = datetime.now().hour
-        return self.start_hour <= current_hour and current_hour < self.end_hour
-
-    async def run(self):
-        if not self.are_we_on_schedule():
+        on_schedule = self.start_hour <= current_hour and current_hour < self.end_hour
+        if not on_schedule:
             self.logger.info(
                 f"{self.polymarket_slug_prefix} is out of schedule: "
                 f"start_hour {self.start_hour}, "
                 f"end_hour {self.end_hour}"
             )
+        return on_schedule
+
+    def is_goal_achieved(self):
+        self.logger.info(
+            f"{self.polymarket_slug_prefix} goal_achieved is {self.goal_achieved}."
+        )
+        return self.goal_achieved
+
+    async def run(self):
+        if self.is_goal_achieved():
             return
+        if not self.are_we_on_schedule():
+            return
+
         start_time = time.time()
         self.logger.info(
             f"polymarket_bot run started | {self.polymarket_slug_prefix}")
@@ -55,10 +67,18 @@ class Polymarket5MinuteBot:
         predictions = await self.get_predictions()
         await self.place_orders(predictions, paper_trade=self.paper_trade)
         end_time = time.time()
+
         self.logger.info(
             f"polymarket_bot run ended | {self.polymarket_slug_prefix}")
         self.logger.info(
             f"Total execution time: {end_time - start_time} seconds.")
+
+    def get_goal_achieved(self):
+        daily_balance_json = load_daily_balance()
+        date_today = datetime.today().strftime('%Y-%m-%d')
+        if date_today not in daily_balance_json:
+            return False
+        return daily_balance_json[date_today]["goal_achieved"]
 
     def save_override_settings_online(self):
 
