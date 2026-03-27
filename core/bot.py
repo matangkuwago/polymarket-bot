@@ -49,15 +49,20 @@ class Polymarket5MinuteBot:
 
     def is_goal_achieved(self):
         self.logger.info(
-            f"{self.polymarket_slug_prefix} goal_achieved is {self.goal_achieved}."
+            f"{self.polymarket_slug_prefix} goal_achieved is {self.goal_achieved}"
         )
         return self.goal_achieved
 
     async def run(self):
-        if self.is_goal_achieved():
-            return
         if not self.are_we_on_schedule():
             return
+
+        if not self.paper_trade and self.is_goal_achieved():
+            self.paper_trade = True
+            self.logger.info(
+                f"{self.polymarket_slug_prefix} since goal_achieved is {self.goal_achieved}, "
+                f"paper_trade is forced to be {self.paper_trade}"
+            )
 
         start_time = time.time()
         self.logger.info(
@@ -71,7 +76,7 @@ class Polymarket5MinuteBot:
         self.logger.info(
             f"polymarket_bot run ended | {self.polymarket_slug_prefix}")
         self.logger.info(
-            f"Total execution time: {end_time - start_time} seconds.")
+            f"Total execution time: {end_time - start_time} seconds")
 
     def get_goal_achieved(self):
         daily_balance_json = load_daily_balance()
@@ -250,7 +255,7 @@ class Polymarket5MinuteBot:
                 raise RuntimeError(error_message)
 
         if not predictions:
-            error_message = f"Unable to get prediction results after {Config.PREDICTION_API_MAX_POLL} tries."
+            error_message = f"Unable to get prediction results after {Config.PREDICTION_API_MAX_POLL} tries"
             self.logger.error(error_message)
             Emailer.send_email(
                 subject="polymarket_bot: Prediction API error", mail_content=error_message)
@@ -264,9 +269,9 @@ class Polymarket5MinuteBot:
         order_budget = len(predictions) * \
             self.entry_price * self.order_size
         self.logger.info(
-            f"usdc_balance: {usdc_balance}, order_budget: {order_budget}.")
+            f"usdc_balance: {usdc_balance}, order_budget: {order_budget}")
         if order_budget > usdc_balance:
-            error_message = f"Not enough account balance to place orders! usdc_balance: {usdc_balance}, order_budget: {order_budget}."
+            error_message = f"Not enough account balance to place orders! usdc_balance: {usdc_balance}, order_budget: {order_budget}"
             self.logger.error(error_message)
             Emailer.send_email(
                 subject="polymarket_bot: balance error", mail_content=error_message)
