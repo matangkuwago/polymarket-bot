@@ -102,7 +102,7 @@ class Polymarket5MinuteBot:
             online_settings[market]["end_hour"] = int(line[5])
 
         if online_settings:
-            self.logger.info(
+            self.logger.debug(
                 f"Online market settings retrieved online: {json.dumps(online_settings, indent=4)}")
             local_market_settings = Config._get_all_market_settings()
             for market in online_settings.keys():
@@ -112,7 +112,7 @@ class Polymarket5MinuteBot:
                 else:
                     local_market_settings[market] = local_market_settings[market] | online_settings[market]
             Config._save_all_market_settings(local_market_settings)
-            self.logger.info(
+            self.logger.debug(
                 f"Saved market settings: {json.dumps(local_market_settings, indent=4)}")
 
     async def load_binance_price_history(self):
