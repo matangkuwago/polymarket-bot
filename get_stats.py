@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 from tabulate import tabulate
-from core.utilities import Emailer
+from core.utilities import Emailer, are_bots_on_schedule
 from core.trader import TradeStats
+from core.config import Config
 
 
 def _format_table_title(title, format):
@@ -59,10 +60,13 @@ def _tabulate_results(table_title: str, results: dict, format: str = "html"):
 
 
 def main():
-
     trade_stats = TradeStats()
     if not trade_stats.trade_files:
         trade_stats.logger.info("No trade records found.")
+        exit(0)
+    if not are_bots_on_schedule():
+        trade_stats.logger.info(
+            "Bots are not running so no stats will be sent.")
         exit(0)
 
     email_lines = []

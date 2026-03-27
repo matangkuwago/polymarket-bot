@@ -2,7 +2,7 @@ import csv
 from datetime import datetime
 from tabulate import tabulate
 from core.trader import TradeStats
-from core.utilities import Emailer
+from core.utilities import Emailer, are_bots_on_schedule
 
 
 def main():
@@ -12,6 +12,11 @@ def main():
 
     if not trade_files:
         print(f"No data to process.")
+        exit(0)
+
+    if not are_bots_on_schedule():
+        trade_stats.logger.info(
+            "Bots are not running so no stats will be sent.")
         exit(0)
 
     trade_files = sorted(
