@@ -67,7 +67,7 @@ class Config:
     }
 
     DAILY_BALANCE_TARGET_PERCENT = float(
-        os.getenv("DAILY_BALANCE_TARGET_PERCENT", "0.02423603793"))
+        os.getenv("DAILY_BALANCE_TARGET_PERCENT", "0.5"))
     DAILY_BALANCE_FILE = os.getenv(
         "DAILY_BALANCE_FILE", "daily_balance.json")
 
