@@ -1,10 +1,7 @@
 import os
-import logging
 from glob import glob
 from core.config import Config
-from core.polymarket import PolymarketClient
-from core.trader import Trade, LiveTrader
-from core.utilities import Emailer
+from core.trader import Trade
 
 
 def archive_unmatched_trade(trade):

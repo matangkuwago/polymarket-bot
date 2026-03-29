@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from core.config import Config
 from core.polymarket import PolymarketClient
 from core.trader import LiveTrader
-from core.utilities import Emailer, setup_logging, load_daily_balance
+from core.utilities import Emailer, setup_logging
+from core.wallet import WalletManager
 
 
 class Polymarket5MinuteBot:
@@ -34,7 +35,7 @@ class Polymarket5MinuteBot:
         self.order_size = market_settings["order_size"]
         self.start_hour = market_settings["start_hour"]
         self.end_hour = market_settings["end_hour"]
-        self.goal_achieved = self.get_goal_achieved()
+        self.wallet = WalletManager().get_wallet(self.polymarket_slug_prefix)
 
     def are_we_on_schedule(self):
         current_hour = datetime.now().hour
@@ -47,22 +48,9 @@ class Polymarket5MinuteBot:
             )
         return on_schedule
 
-    def is_goal_achieved(self):
-        self.logger.info(
-            f"{self.polymarket_slug_prefix} goal_achieved is {self.goal_achieved}"
-        )
-        return self.goal_achieved
-
     async def run(self):
         if not self.are_we_on_schedule():
             return
-
-        if not self.paper_trade and self.is_goal_achieved():
-            self.paper_trade = True
-            self.logger.info(
-                f"{self.polymarket_slug_prefix} since goal_achieved is {self.goal_achieved}, "
-                f"paper_trade is forced to be {self.paper_trade}"
-            )
 
         start_time = time.time()
         self.logger.info(
@@ -77,13 +65,6 @@ class Polymarket5MinuteBot:
             f"polymarket_bot run ended | {self.polymarket_slug_prefix}")
         self.logger.info(
             f"Total execution time: {end_time - start_time} seconds")
-
-    def get_goal_achieved(self):
-        daily_balance_json = load_daily_balance()
-        date_today = datetime.today().strftime('%Y-%m-%d')
-        if date_today not in daily_balance_json:
-            return False
-        return daily_balance_json[date_today]["goal_achieved"]
 
     def save_override_settings_online(self):
 
@@ -263,15 +244,16 @@ class Polymarket5MinuteBot:
 
         return predictions
 
-    def _check_balance(self, trader: LiveTrader, predictions):
-        usdc_balance = trader.get_usdc_balance()
+    def _check_balance(self, predictions):
+        usdc_balance = self.wallet.available_balance()
 
         order_budget = len(predictions) * \
             self.entry_price * self.order_size
         self.logger.info(
             f"usdc_balance: {usdc_balance}, order_budget: {order_budget}")
         if order_budget > usdc_balance:
-            error_message = f"Not enough account balance to place orders! usdc_balance: {usdc_balance}, order_budget: {order_budget}"
+            error_message = (f"Not enough account balance to place orders! "
+                             f"usdc_balance: {usdc_balance}, order_budget: {order_budget}")
             self.logger.error(error_message)
             Emailer.send_email(
                 subject="polymarket_bot: balance error", mail_content=error_message)
@@ -279,8 +261,8 @@ class Polymarket5MinuteBot:
 
     async def place_orders(self, predictions: dict, paper_trade: bool = True):
 
-        trader = LiveTrader(logger=self.logger)
-        self._check_balance(trader, predictions)
+        self._check_balance(predictions)
+        trader = LiveTrader(wallet=self.wallet, logger=self.logger)
 
         client = PolymarketClient(
             market_slug_prefix=self.polymarket_slug_prefix)

@@ -1,9 +1,9 @@
 import os
-import logging
 from glob import glob
 from core.config import Config
 from core.polymarket import PolymarketClient
 from core.trader import Trade, LiveTrader
+from core.wallet import WalletManager
 from core.utilities import Emailer
 
 
@@ -24,7 +24,8 @@ def main():
     trade_files.sort()
 
     num_records_processed = 0
-    trader = LiveTrader()
+    wallet = WalletManager().get_wallet("btc-updown-5m")
+    trader = LiveTrader(wallet)
     for file in trade_files:
         market_slug = os.path.basename(file).replace(".trade", "")
         market_slug_prefix = market_slug[:-11]

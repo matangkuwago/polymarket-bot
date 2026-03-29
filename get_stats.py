@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from tabulate import tabulate
 from core.utilities import Emailer, are_bots_on_schedule
 from core.trader import TradeStats
-from core.config import Config
 
 
 def _format_table_title(title, format):

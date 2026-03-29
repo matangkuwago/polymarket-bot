@@ -211,7 +211,7 @@ trades
 trades_processed
 .DS_Store
 market_config.json
-daily_balance.json
+wallet_config.json
 _tmp_*.*
 screenlog.*
 stats_per_hour.csv

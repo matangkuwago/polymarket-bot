@@ -2,13 +2,14 @@ import json
 import os
 import time
 import logging
-from dataclasses import dataclass, asdict
 from glob import glob
-from core.config import Config
-from core.polymarket import Market, PolymarketClient
-from core.utilities import Emailer, setup_logging
-from py_clob_client.clob_types import OrderArgs, OrderType, BalanceAllowanceParams, AssetType
+from dataclasses import dataclass, asdict
+from py_clob_client.clob_types import OrderArgs, OrderType
 from py_clob_client.order_builder.constants import BUY
+from core.config import Config
+from core.wallet import Wallet
+from core.polymarket import Market
+from core.utilities import Emailer, setup_logging
 
 
 @dataclass
@@ -80,83 +81,20 @@ class Trade:
 
 
 class LiveTrader:
-    """Live trading via Polymarket CLOB API.
-
-    Supports:
-    - EOA/MetaMask wallets (signature_type=0, default)
-    - Magic/proxy wallets (signature_type=1, requires funder address)
-    - FOK (Fill-Or-Kill) market orders for immediate execution
-    - Order status tracking and confirmation
-    """
+    """Live trading via Polymarket CLOB API."""
 
     # Minimum order size
     MIN_ORDER_SIZE = 5.0
 
-    def __init__(self, market_cache=None, logger=None):
-        """Initialize live trader.
-
-        Args:
-            market_cache: Optional MarketDataCache for faster orderbook lookups
-        """
-        if not Config.PRIVATE_KEY:
-            raise ValueError("PRIVATE_KEY not set in .env")
-
-        # Validate proxy wallet config
-        if Config.SIGNATURE_TYPE == 1 and not Config.FUNDER_ADDRESS:
-            raise ValueError(
-                "FUNDER_ADDRESS required for proxy wallet (SIGNATURE_TYPE=1)")
-
-        self._market_cache = market_cache
+    def __init__(self, wallet: Wallet, logger=None):
+        """Initialize live trader."""
+        self.wallet = wallet
+        self.client = self.wallet.clob_client
         self.logger = (logging.getLogger(Config.LOGGER_NAME)
                        if logger is None else logger)
 
-        self._init_client()
-
-    def _init_client(self):
-        """Initialize py-clob-client with wallet credentials."""
-        try:
-            from py_clob_client.client import ClobClient
-
-            if Config.SIGNATURE_TYPE == 1 or Config.SIGNATURE_TYPE == 2:
-                if not Config.FUNDER_ADDRESS:
-                    raise ValueError(
-                        "FUNDER_ADDRESS required when SIGNATURE_TYPE=1 or 2")
-                self.logger.info(
-                    f"[LiveTrader] Using proxy wallet with funder: {Config.FUNDER_ADDRESS[:10]}...")
-                self.client = ClobClient(
-                    host=Config.CLOB_API,
-                    key=Config.PRIVATE_KEY,
-                    chain_id=Config.CHAIN_ID,
-                    signature_type=Config.SIGNATURE_TYPE,
-                    funder=Config.FUNDER_ADDRESS,
-                )
-            else:
-                self.client = ClobClient(
-                    host=Config.CLOB_API,
-                    key=Config.PRIVATE_KEY,
-                    chain_id=Config.CHAIN_ID,
-                )
-
-            # Derive API credentials
-            creds = self.client.create_or_derive_api_creds()
-            self.client.set_api_creds(creds)
-
-            wallet_type = "EOA" if Config.SIGNATURE_TYPE == 0 else "proxy"
-            self.logger.info(
-                f"[LiveTrader] Live trading client initialized ({wallet_type} wallet)")
-
-        except ImportError:
-            raise ImportError(
-                "py-clob-client not installed. Run: pip install py-clob-client")
-        except Exception as e:
-            raise RuntimeError(f"Failed to init trading client: {e}")
-
     def _validate_order(self, market: Market, direction: str, entry_price, amount: float) -> tuple[bool, str]:
-        """Validate order parameters before submission.
-
-        Returns:
-            (is_valid, error_message)
-        """
+        """Validate order parameters before submission."""
         # Check minimum order size
         if amount < self.MIN_ORDER_SIZE:
             return (
@@ -237,20 +175,19 @@ class LiveTrader:
             "order": None,
         }
 
-    def get_usdc_balance(self):
-        balance = 0
-        collateral = self.client.get_balance_allowance(
-            params=BalanceAllowanceParams(
-                asset_type=AssetType.COLLATERAL, signature_type=Config.SIGNATURE_TYPE)
-        )
-
-        if collateral and 'balance' in collateral:
-            balance = float(collateral['balance']) / Config.USDC_TICK_SIZE
-
-        return balance
-
     def get_order(self, order_id: str):
         return self.client.get_order(order_id)
+
+    @staticmethod
+    def calculate_fee(price: float, base_fee_bps: int) -> float:
+        """Calculate actual fee percentage from price and base fee.
+
+        Fee formula: fee = price * (1 - price) * base_fee / 10000
+        At 50¢ with base_fee=1000: 0.50 * 0.50 * 0.10 = 2.5%
+        """
+        if base_fee_bps == 0:
+            return 0.0
+        return price * (1 - price) * base_fee_bps / 10000
 
     def place_limit_order(
         self,
@@ -283,7 +220,7 @@ class LiveTrader:
         # Get fee rate from market
         fee_rate_bps = market.taker_fee_bps if hasattr(
             market, "taker_fee_bps") else 1000
-        fee_pct = PolymarketClient.calculate_fee(entry_price, fee_rate_bps)
+        fee_pct = self.calculate_fee(entry_price, fee_rate_bps)
 
         try:
             if not token_id:
@@ -309,7 +246,7 @@ class LiveTrader:
 
                 if Config.EMAIL_LIMIT_ORDER_INFO:
                     # send notification
-                    usdc_balance = self.get_usdc_balance()
+                    usdc_balance = self.wallet.available_balance()
                     subject = f"polymarket_bot: Order created successfully for market {market.slug}"
                     mail_content = f"Order ID: {order_id}: https://polymarket.com/event/{market.slug}"
                     mail_content += f"\nBalance: {usdc_balance}"
