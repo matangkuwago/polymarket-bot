@@ -12,6 +12,7 @@ fi
 trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
 touch $LOCK_FILE
 
+python archive_processed_trades.py --old_days=1
 python update_trade_records.py
 
 elapsed_time=$(($SECONDS - $start_time))
