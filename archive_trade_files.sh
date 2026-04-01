@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 mkdir -p old_trades/trades_processed
-mv -f trades_processed/*.trade old_trades/trades_processed/ 2>/dev/null
+python archive_processed_trades.py --old_days=1
