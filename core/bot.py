@@ -17,9 +17,9 @@ from core.wallet import WalletManager
 class Polymarket5MinuteBot:
     market_timestamp_interval_seconds = 300
 
-    def __init__(self, polymarket_slug_prefix: str, binance_ticker: str):
+    def __init__(self, polymarket_slug_prefix: str):
         self.polymarket_slug_prefix = polymarket_slug_prefix
-        self.binance_ticker = binance_ticker
+        self.binance_ticker = f"{polymarket_slug_prefix[:3]}USDT".upper()
         self.price_history_binance = {}
         self.price_history_polymarket = {}
         self.logger = setup_logging(f'{self.polymarket_slug_prefix}.log')
