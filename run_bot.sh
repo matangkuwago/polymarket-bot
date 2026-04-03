@@ -15,16 +15,16 @@ touch $LOCK_FILE
 ./process_trade_records.sh
 
 # Bot for SOL 5-minute market
-python run_bot.py --market_slug_prefix=sol-updown-5m --binance_ticker=SOLUSDT
+python run_bot.py --market_slug_prefix=sol-updown-5m
 
 # Bot for XRP 5-minute market
-python run_bot.py --market_slug_prefix=xrp-updown-5m --binance_ticker=XRPUSDT
+python run_bot.py --market_slug_prefix=xrp-updown-5m
 
 # Bot for BTC 5-minute market
-python run_bot.py --market_slug_prefix=btc-updown-5m --binance_ticker=BTCUSDT
+python run_bot.py --market_slug_prefix=btc-updown-5m
 
 # Bot for ETH 5-minute market
-python run_bot.py --market_slug_prefix=eth-updown-5m --binance_ticker=ETHUSDT
+python run_bot.py --market_slug_prefix=eth-updown-5m
 
 ./process_trade_records.sh
 ./send_stats.sh
