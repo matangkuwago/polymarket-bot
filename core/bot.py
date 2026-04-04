@@ -34,6 +34,8 @@ class Polymarket5MinuteBot:
         self.order_size = market_settings["order_size"]
         self.start_hour = market_settings["start_hour"]
         self.end_hour = market_settings["end_hour"]
+        self.threshold_low = market_settings["threshold_low"]
+        self.threshold_high = market_settings["threshold_high"]
 
         self.check_performance()
         self.wallet = WalletManager().get_wallet(self.polymarket_slug_prefix)
@@ -48,7 +50,7 @@ class Polymarket5MinuteBot:
         wins = sum([data[x]["wins"] for x in data])
         performance = wins/record_count if record_count > 0 else 0
         send_email_notification = False
-        if self.paper_trade and performance <= Config.PAPER_TRADE_OFF_THRESHOLD:
+        if self.paper_trade and performance <= self.threshold_low:
             self.paper_trade = False
             Config.save_setting(
                 self.polymarket_slug_prefix,
@@ -58,11 +60,11 @@ class Polymarket5MinuteBot:
             log_message = (
                 f"paper_trade set to {self.paper_trade}: "
                 f"performance: {performance:.2f} vs "
-                f"threshold {Config.PAPER_TRADE_OFF_THRESHOLD:.2f}"
+                f"threshold {self.threshold_low:.2f}"
             )
             self.logger.info(log_message)
             send_email_notification = True
-        elif not self.paper_trade and performance > Config.PAPER_TRADE_ON_THRESHOLD:
+        elif not self.paper_trade and performance >= self.threshold_high:
             self.paper_trade = True
             Config.save_setting(
                 self.polymarket_slug_prefix,
@@ -72,7 +74,7 @@ class Polymarket5MinuteBot:
             log_message = (
                 f"paper_trade set to {self.paper_trade}: "
                 f"performance: {performance:.2f} vs "
-                f"threshold {Config.PAPER_TRADE_ON_THRESHOLD:.2f}"
+                f"threshold {self.threshold_high:.2f}"
             )
             self.logger.info(log_message)
             send_email_notification = True

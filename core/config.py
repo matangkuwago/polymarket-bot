@@ -77,10 +77,6 @@ class Config:
     }
     PAPER_TRADE_CHECK_PERFORMANCE_HOURS: int = int(
         os.getenv("PAPER_TRADE_CHECK_PERFORMANCE_HOURS", 24))
-    PAPER_TRADE_OFF_THRESHOLD: float = float(
-        os.getenv("PAPER_TRADE_OFF_THRESHOLD", 0.5))
-    PAPER_TRADE_ON_THRESHOLD: float = float(
-        os.getenv("PAPER_TRADE_ON_THRESHOLD", 0.52))
 
     @classmethod
     def get_setting(cls, market: str, setting: str, settings_file: str = None):
