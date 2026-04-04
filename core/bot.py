@@ -49,8 +49,18 @@ class Polymarket5MinuteBot:
         performance = wins/record_count if record_count > 0 else 0
         if self.paper_trade and performance <= Config.PAPER_TRADE_OFF_THRESHOLD:
             self.paper_trade = False
+            self.logger.info(
+                f"paper_trade set to {self.paper_trade}: "
+                f"performance: {performance:.2f} vs "
+                f"threshold {Config.PAPER_TRADE_OFF_THRESHOLD:.2f}"
+            )
         elif not self.paper_trade and performance > Config.PAPER_TRADE_ON_THRESHOLD:
             self.paper_trade = True
+            self.logger.info(
+                f"paper_trade set to {self.paper_trade}: "
+                f"performance: {performance:.2f} vs "
+                f"threshold {Config.PAPER_TRADE_ON_THRESHOLD:.2f}"
+            )
 
     def are_we_on_schedule(self):
         current_hour = datetime.now().hour
