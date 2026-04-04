@@ -24,8 +24,7 @@ class Polymarket5MinuteBot:
         self.price_history_polymarket = {}
         self.logger = setup_logging(f'{self.polymarket_slug_prefix}.log')
 
-        # get paper trade settings
-        self.save_override_settings_online()
+        # get settings
         market_settings = Config.get_market_settings(
             self.polymarket_slug_prefix)
         self.logger.info(
@@ -35,6 +34,7 @@ class Polymarket5MinuteBot:
         self.order_size = market_settings["order_size"]
         self.start_hour = market_settings["start_hour"]
         self.end_hour = market_settings["end_hour"]
+
         self.check_performance()
         self.wallet = WalletManager().get_wallet(self.polymarket_slug_prefix)
 
@@ -49,6 +49,11 @@ class Polymarket5MinuteBot:
         performance = wins/record_count if record_count > 0 else 0
         if self.paper_trade and performance <= Config.PAPER_TRADE_OFF_THRESHOLD:
             self.paper_trade = False
+            Config.save_setting(
+                self.polymarket_slug_prefix,
+                "paper_trade",
+                self.paper_trade
+            )
             self.logger.info(
                 f"paper_trade set to {self.paper_trade}: "
                 f"performance: {performance:.2f} vs "
@@ -56,6 +61,11 @@ class Polymarket5MinuteBot:
             )
         elif not self.paper_trade and performance > Config.PAPER_TRADE_ON_THRESHOLD:
             self.paper_trade = True
+            Config.save_setting(
+                self.polymarket_slug_prefix,
+                "paper_trade",
+                self.paper_trade
+            )
             self.logger.info(
                 f"paper_trade set to {self.paper_trade}: "
                 f"performance: {performance:.2f} vs "

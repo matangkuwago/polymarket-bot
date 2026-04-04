@@ -21,25 +21,6 @@ class Config:
     CHAIN_ID = int(os.getenv("CHAIN_ID", 137))  # Polygon mainnet
     USDC_TICK_SIZE = int(os.getenv("USDC_TICK_SIZE", 1_000_000))
 
-    # Market settings
-    MARKET_SETTINGS_OVERRIDE_URL = os.getenv(
-        "MARKET_SETTINGS_OVERRIDE_URL", "")
-    MARKET_SETTINGS_FILE = os.getenv(
-        "MARKET_SETTINGS_FILE", "market_config.json")
-    MARKET_SETTINGS_DEFAULT = {
-        "paper_trade": True,
-        "entry_price": 0.49,
-        "order_size": 5,
-        "start_hour": 5,
-        "end_hour": 18,
-    }
-    PAPER_TRADE_CHECK_PERFORMANCE_HOURS: int = int(
-        os.getenv("PAPER_TRADE_CHECK_PERFORMANCE_HOURS", 24))
-    PAPER_TRADE_OFF_THRESHOLD: float = float(
-        os.getenv("PAPER_TRADE_OFF_THRESHOLD", 0.5))
-    PAPER_TRADE_ON_THRESHOLD: float = float(
-        os.getenv("PAPER_TRADE_ON_THRESHOLD", 0.52))
-
     # Logging settings
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
     LOGGER_NAME = "polymarket.bot"
@@ -82,25 +63,35 @@ class Config:
     EMAIL_LIMIT_ORDER_INFO: bool = os.getenv(
         "EMAIL_LIMIT_ORDER_INFO", "false").lower() == "true"
 
-    @classmethod
-    def get_paper_trade_settings(cls, settings_file: str = None):
-        market_settings = Config._get_all_market_settings(settings_file)
-        result = {}
-        for market_slug, settings in market_settings.items():
-            result[market_slug] = settings["paper_trade"]
-        return result
+    # Market settings
+    MARKET_SETTINGS_OVERRIDE_URL = os.getenv(
+        "MARKET_SETTINGS_OVERRIDE_URL", "")
+    MARKET_SETTINGS_FILE = os.getenv(
+        "MARKET_SETTINGS_FILE", "market_config.json")
+    MARKET_SETTINGS_DEFAULT = {
+        "paper_trade": True,
+        "entry_price": 0.49,
+        "order_size": 5,
+        "start_hour": 5,
+        "end_hour": 18,
+    }
+    PAPER_TRADE_CHECK_PERFORMANCE_HOURS: int = int(
+        os.getenv("PAPER_TRADE_CHECK_PERFORMANCE_HOURS", 24))
+    PAPER_TRADE_OFF_THRESHOLD: float = float(
+        os.getenv("PAPER_TRADE_OFF_THRESHOLD", 0.5))
+    PAPER_TRADE_ON_THRESHOLD: float = float(
+        os.getenv("PAPER_TRADE_ON_THRESHOLD", 0.52))
 
     @classmethod
-    def get_paper_trade_setting(cls, market_slug: str):
-        settings = Config.get_market_settings(market_slug)
-        return settings["paper_trade"]
+    def get_setting(cls, market: str, setting: str, settings_file: str = None):
+        data = cls.get_market_settings(market, settings_file)
+        return data[setting]
 
     @classmethod
-    def save_paper_trade_settings(cls, settings_json: dict, settings_file: str = None):
-        for market in settings_json:
-            market_settings = Config.get_market_settings(market)
-            market_settings[market]["paper_trade"] = settings_json[market]
-            Config.save_market_settings(market, market_settings)
+    def save_setting(cls, market: str, setting: str, value, settings_file: str = None):
+        data = cls.get_market_settings(market, settings_file)
+        data[setting] = value
+        cls.save_market_settings(market, data)
 
     @classmethod
     def _get_all_market_settings(cls, settings_file: str = None):
