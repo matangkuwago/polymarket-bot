@@ -47,6 +47,7 @@ class Polymarket5MinuteBot:
         record_count = sum([data[x]["record_count"] for x in data])
         wins = sum([data[x]["wins"] for x in data])
         performance = wins/record_count if record_count > 0 else 0
+        send_email_notification = False
         if self.paper_trade and performance <= Config.PAPER_TRADE_OFF_THRESHOLD:
             self.paper_trade = False
             Config.save_setting(
@@ -54,11 +55,13 @@ class Polymarket5MinuteBot:
                 "paper_trade",
                 self.paper_trade
             )
-            self.logger.info(
+            log_message = (
                 f"paper_trade set to {self.paper_trade}: "
                 f"performance: {performance:.2f} vs "
                 f"threshold {Config.PAPER_TRADE_OFF_THRESHOLD:.2f}"
             )
+            self.logger.info(log_message)
+            send_email_notification = True
         elif not self.paper_trade and performance > Config.PAPER_TRADE_ON_THRESHOLD:
             self.paper_trade = True
             Config.save_setting(
@@ -66,10 +69,25 @@ class Polymarket5MinuteBot:
                 "paper_trade",
                 self.paper_trade
             )
-            self.logger.info(
+            log_message = (
                 f"paper_trade set to {self.paper_trade}: "
                 f"performance: {performance:.2f} vs "
                 f"threshold {Config.PAPER_TRADE_ON_THRESHOLD:.2f}"
+            )
+            self.logger.info(log_message)
+            send_email_notification = True
+
+        if send_email_notification:
+            timestamp = datetime.now().timestamp()
+            subject = (
+                "polymarket_bot: {self.polymarket_slug_prefix}: "
+                f"paper_trade setting is now {self.paper_trade} | "
+                f"{timestamp}"
+            )
+            mail_content = log_message
+            Emailer.send_email(
+                subject=subject,
+                mail_content=mail_content
             )
 
     def are_we_on_schedule(self):
