@@ -33,6 +33,12 @@ class Config:
         "start_hour": 5,
         "end_hour": 18,
     }
+    PAPER_TRADE_CHECK_PERFORMANCE_HOURS: int = int(
+        os.getenv("PAPER_TRADE_CHECK_PERFORMANCE_HOURS", 24))
+    PAPER_TRADE_OFF_THRESHOLD: float = float(
+        os.getenv("PAPER_TRADE_OFF_THRESHOLD", 0.5))
+    PAPER_TRADE_ON_THRESHOLD: float = float(
+        os.getenv("PAPER_TRADE_ON_THRESHOLD", 0.52))
 
     # Logging settings
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()

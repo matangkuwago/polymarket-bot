@@ -9,7 +9,7 @@ from binance import AsyncClient
 from datetime import datetime, timedelta
 from core.config import Config
 from core.polymarket import PolymarketClient
-from core.trader import LiveTrader
+from core.trader import LiveTrader, TradeStats
 from core.utilities import Emailer, setup_logging
 from core.wallet import WalletManager
 
@@ -35,7 +35,22 @@ class Polymarket5MinuteBot:
         self.order_size = market_settings["order_size"]
         self.start_hour = market_settings["start_hour"]
         self.end_hour = market_settings["end_hour"]
+        self.check_performance()
         self.wallet = WalletManager().get_wallet(self.polymarket_slug_prefix)
+
+    def check_performance(self):
+        trade_stats = TradeStats()
+        date_limit = datetime.now() - timedelta(
+            hours=Config.PAPER_TRADE_CHECK_PERFORMANCE_HOURS)
+        timestamp = date_limit.timestamp()
+        data = trade_stats.get_statistics(start_ts=timestamp)
+        record_count = sum([data[x]["record_count"] for x in data])
+        wins = sum([data[x]["wins"] for x in data])
+        performance = wins/record_count if record_count > 0 else 0
+        if self.paper_trade and performance <= Config.PAPER_TRADE_OFF_THRESHOLD:
+            self.paper_trade = False
+        elif not self.paper_trade and performance > Config.PAPER_TRADE_ON_THRESHOLD:
+            self.paper_trade = True
 
     def are_we_on_schedule(self):
         current_hour = datetime.now().hour
