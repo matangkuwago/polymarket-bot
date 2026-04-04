@@ -80,7 +80,7 @@ class Polymarket5MinuteBot:
         if send_email_notification:
             timestamp = datetime.now().timestamp()
             subject = (
-                "polymarket_bot: {self.polymarket_slug_prefix}: "
+                f"polymarket_bot: {self.polymarket_slug_prefix}: "
                 f"paper_trade setting is now {self.paper_trade} | "
                 f"{timestamp}"
             )
