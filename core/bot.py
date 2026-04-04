@@ -46,6 +46,10 @@ class Polymarket5MinuteBot:
             hours=Config.PAPER_TRADE_CHECK_PERFORMANCE_HOURS)
         timestamp = date_limit.timestamp()
         data = trade_stats.get_statistics(start_ts=timestamp)
+        data = dict(filter(
+            lambda x: x[0] == self.polymarket_slug_prefix,
+            data.items()
+        ))
         record_count = sum([data[x]["record_count"] for x in data])
         wins = sum([data[x]["wins"] for x in data])
         performance = wins/record_count if record_count > 0 else 0
