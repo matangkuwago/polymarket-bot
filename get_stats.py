@@ -1,7 +1,9 @@
+import json
 from datetime import datetime, timedelta
 from tabulate import tabulate
 from core.utilities import Emailer, are_bots_on_schedule
 from core.trader import TradeStats
+from core.config import Config
 
 
 def _format_table_title(title, format):
@@ -58,6 +60,19 @@ def _tabulate_results(table_title: str, results: dict, format: str = "html"):
     )
 
 
+def load_stats_hours():
+    try:
+        with open(Config.REPORT_CONFIG_FILE, 'r') as f:
+            data = json.load(f)
+        if not data or "stats_hours" not in data:
+            return []
+        return data["stats_hours"]
+    except FileNotFoundError as e:
+        return {}
+    except json.JSONDecodeError:
+        return {}
+
+
 def main():
     trade_stats = TradeStats()
     if not trade_stats.trade_files:
@@ -69,9 +84,7 @@ def main():
         exit(0)
 
     email_lines = []
-    email_lines += [_tabulate_results("All", trade_stats.get_statistics())]
-
-    hours = [1, 4, 8, 24]
+    hours = load_stats_hours()
     for hour in hours:
         date_limit = datetime.now() - timedelta(hours=hour)
         timestamp = date_limit.timestamp()

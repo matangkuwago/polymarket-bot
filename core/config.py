@@ -128,3 +128,7 @@ class Config:
         market_settings = cls.MARKET_SETTINGS_DEFAULT | settings
         all_market_settings[market] = market_settings
         cls._save_all_market_settings(all_market_settings)
+
+    # Reporting settings
+    REPORT_CONFIG_FILE: str = os.getenv(
+        "REPORT_CONFIG_FILE", "report_config.json")
