@@ -1,59 +1,67 @@
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from core.trader import TradeStats
+from core.config import Config
+
+
+def get_dates(timestamps):
+    start_ts = min(timestamps)
+    end_ts = max(timestamps)
+
+    start_date = datetime.fromtimestamp(start_ts).date()
+    end_date = datetime.fromtimestamp(end_ts).date()
+
+    dates = [start_date + timedelta(days=x)
+             for x in range((end_date - start_date).days + 1)]
+
+    return [date.strftime("%Y-%m-%d") for date in dates]
+
+
+def get_performance(
+    trade_files: list,
+    date: str,
+    hour: int,
+    num_stats_hours: int = Config.PAPER_TRADE_CHECK_PERFORMANCE_HOURS
+):
+    end_date = datetime.strptime(date, "%Y-%m-%d") + timedelta(hours=hour+1)
+    end_ts = end_date.timestamp()
+    start_date = end_date - timedelta(hours=num_stats_hours)
+    start_ts = start_date.timestamp()
+
+    filtered_trade_files = list(filter(
+        lambda x: start_ts <= x["timestamp"] and x["timestamp"] <= end_ts,
+        trade_files
+    ))
+    if not filtered_trade_files:
+        return ""
+
+    record_count = 0
+    wins = 0
+    for trade_item in filtered_trade_files:
+        trade = trade_item["trade"]
+        record_count += 1
+        if trade.won:
+            wins += 1
+    performance = f"{(wins / record_count)*100:.2f}%" if record_count > 0 else ""
+    return performance
 
 
 def main(ticker: str):
-    trade_stats_data = {}
+
     trade_stats = TradeStats()
     trade_files = trade_stats.get_trade_files()
+    if not trade_files:
+        print(f"No data to process.")
+        exit(0)
+
     trade_files = list(filter(
         lambda x: ticker in x["trade"].market_slug,
         trade_files
     ))
 
-    if not trade_files:
-        print(f"No data to process.")
-        exit(0)
+    timestamps = [x["timestamp"] for x in trade_files]
+    dates = get_dates(timestamps)
 
-    trade_files = sorted(
-        trade_files, key=lambda x: x["timestamp"])
-
-    previous_trade_date_text = ""
-    for trade_item in trade_files:
-        timestamp = trade_item["timestamp"]
-        trade = trade_item["trade"]
-        trade_date = datetime.fromtimestamp(timestamp)
-        trade_date_text = trade_date.strftime("%Y-%m-%d")
-        if previous_trade_date_text != trade_date_text:
-            record_count = 0
-            wins = 0
-            matched = 0
-            matched_wins = 0
-        hour = trade_date.hour
-        if trade_date_text not in trade_stats_data:
-            trade_stats_data[trade_date_text] = {}
-            for _hour in range(0, 24):
-                trade_stats_data[trade_date_text][_hour] = {
-                    "record_count": 0,
-                    "wins": 0,
-                    "matched": 0,
-                    "matched_wins": 0,
-                }
-        record_count += 1
-        if trade.won:
-            wins += 1
-        if trade.order_status == "MATCHED":
-            matched += 1
-            if trade.won:
-                matched_wins += 1
-        trade_stats_data[trade_date_text][hour]["record_count"] = record_count
-        trade_stats_data[trade_date_text][hour]["wins"] = wins
-        trade_stats_data[trade_date_text][hour]["matched"] = matched
-        trade_stats_data[trade_date_text][hour]["matched_wins"] = matched_wins
-        previous_trade_date_text = trade_date_text
-
-    dates = list(sorted(trade_stats_data.keys()))
     headers = ["time"] + dates
     csv_data = [headers]
 
@@ -61,9 +69,7 @@ def main(ticker: str):
         hour_string = f" {hour:02d}"
         performance_data = []
         for date in dates:
-            record_count = trade_stats_data[date][hour]["record_count"]
-            wins = trade_stats_data[date][hour]["wins"]
-            performance = f"{(wins / record_count)*100:.2f}%" if record_count > 0 else ""
+            performance = get_performance(trade_files, date, hour)
             performance_data.append(performance)
         _row_data = [hour_string] + performance_data
         csv_data.append(_row_data)
