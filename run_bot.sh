@@ -2,16 +2,6 @@
 
 start_time=$SECONDS
 
-LOCK_FILE=/tmp/polymarket_bot_lock.txt
-if [ -f $LOCK_FILE ]; then
-   echo "File $LOCK_FILE exists."
-   exit 1
-else
-   echo "File $LOCK_FILE does not exist."
-fi
-trap 'rm -rf $LOCK_FILE' EXIT  # remove the lock file on exit
-touch $LOCK_FILE
-
 ./process_trade_records.sh
 
 # Bot for SOL 5-minute market
