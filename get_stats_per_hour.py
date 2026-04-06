@@ -1,7 +1,15 @@
+import argparse
 import csv
 from datetime import datetime, timedelta
 from core.trader import TradeStats
 from core.config import Config
+
+
+parser = argparse.ArgumentParser(
+    description="Tool for generating statistics per hour.")
+parser.add_argument("--start_date", type=str, required=True,
+                    help="start date to use to filter the data, format is yyyy-mm-dd e.g. 2026-04-01")
+args = parser.parse_args()
 
 
 def get_dates(timestamps):
@@ -54,8 +62,12 @@ def main(ticker: str):
         print(f"No data to process.")
         exit(0)
 
+    filter_timestamp = datetime.strptime(
+        args.start_date, "%Y-%m-%d") .timestamp()
+
     trade_files = list(filter(
-        lambda x: ticker in x["trade"].market_slug,
+        lambda x: (x["timestamp"] >= filter_timestamp and
+                   ticker in x["trade"].market_slug),
         trade_files
     ))
 
