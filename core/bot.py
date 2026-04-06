@@ -37,8 +37,11 @@ class Polymarket5MinuteBot:
         self.end_hour = market_settings["end_hour"]
         self.threshold_low = market_settings["threshold_low"]
         self.threshold_high = market_settings["threshold_high"]
+        self.threshold_count = market_settings["threshold_count"]
+        self.do_check_performance = market_settings["do_check_performance"]
 
-        self.check_performance()
+        if self.do_check_performance:
+            self.check_performance()
         self.wallet = WalletManager().get_wallet(self.polymarket_slug_prefix)
 
     def check_performance(self):
@@ -47,11 +50,22 @@ class Polymarket5MinuteBot:
             hours=Config.PAPER_TRADE_CHECK_PERFORMANCE_HOURS)
         timestamp = date_limit.timestamp()
         data = trade_stats.get_statistics(start_ts=timestamp)
+        if not data:
+            self.logger.info("check_performance: no data was retrieved")
+            return
         data = dict(filter(
             lambda x: x[0] == self.polymarket_slug_prefix,
             data.items()
         ))
+
         record_count = sum([data[x]["record_count"] for x in data])
+        if record_count < self.threshold_count:
+            self.logger.info(
+                f"check_performance: record_count ({record_count}) "
+                f"< threshold_count ({self.threshold_count})"
+            )
+            return
+
         wins = sum([data[x]["wins"] for x in data])
         performance = wins/record_count if record_count > 0 else 0
         send_email_notification = False
