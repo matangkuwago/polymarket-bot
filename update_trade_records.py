@@ -69,7 +69,8 @@ def main():
 
         trade.save()
 
-        subject = f"polymarket_bot: result: {won_text} | {trade.market_slug}"
+        bot_id = Config.BOT_ID
+        subject = f"{bot_id}: polymarket_bot: result: {won_text} | {trade.market_slug}"
         mail_content = (
             f"Trade Record:\n"
             f"trade.timestamp: {trade.timestamp}\n"

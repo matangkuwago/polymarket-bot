@@ -9,6 +9,8 @@ load_dotenv()
 
 class Config:
 
+    BOT_ID: str = os.getenv("BOT_ID", "001")
+
     # Wallet settings
     WALLET_SETTINGS_FILE: str = os.getenv(
         "WALLET_SETTINGS_FILE", "wallet_config.json")

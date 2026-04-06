@@ -247,7 +247,8 @@ class LiveTrader:
                 if Config.EMAIL_LIMIT_ORDER_INFO:
                     # send notification
                     usdc_balance = self.wallet.available_balance()
-                    subject = f"polymarket_bot: Order created successfully for market {market.slug}"
+                    bot_id = Config.BOT_ID
+                    subject = f"{bot_id}: polymarket_bot: Order created successfully for market {market.slug}"
                     mail_content = f"Order ID: {order_id}: https://polymarket.com/event/{market.slug}"
                     mail_content += f"\nBalance: {usdc_balance}"
                     Emailer.send_email(

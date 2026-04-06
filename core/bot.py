@@ -18,6 +18,7 @@ class Polymarket5MinuteBot:
     market_timestamp_interval_seconds = 300
 
     def __init__(self, polymarket_slug_prefix: str):
+        self.bot_id = Config.BOT_ID
         self.polymarket_slug_prefix = polymarket_slug_prefix
         self.binance_ticker = f"{polymarket_slug_prefix[:3]}USDT".upper()
         self.price_history_binance = {}
@@ -86,7 +87,7 @@ class Polymarket5MinuteBot:
         if send_email_notification:
             timestamp = datetime.now().timestamp()
             subject = (
-                f"polymarket_bot: {self.polymarket_slug_prefix}: "
+                f"{self.bot_id}: polymarket_bot: {self.polymarket_slug_prefix}: "
                 f"paper_trade setting is now {self.paper_trade} | "
                 f"{timestamp}"
             )
@@ -251,7 +252,7 @@ class Polymarket5MinuteBot:
             error_message = f"Unable to send prediction request. Status code is {status_code}, message is {response_text}"
             self.logger.error(error_message)
             Emailer.send_email(
-                subject="polymarket_bot: Prediction API error", mail_content=error_message)
+                subject=f"{self.bot_id}: polymarket_bot: Prediction API error", mail_content=error_message)
             return error_message
 
         predictions = []
@@ -298,7 +299,7 @@ class Polymarket5MinuteBot:
             error_message = f"Unable to get prediction results after {Config.PREDICTION_API_MAX_POLL} tries"
             self.logger.error(error_message)
             Emailer.send_email(
-                subject="polymarket_bot: Prediction API error", mail_content=error_message)
+                subject=f"{self.bot_id}: polymarket_bot: Prediction API error", mail_content=error_message)
             raise RuntimeError(error_message)
 
         return predictions
@@ -315,7 +316,7 @@ class Polymarket5MinuteBot:
                              f"usdc_balance: {usdc_balance}, order_budget: {order_budget}")
             self.logger.error(error_message)
             Emailer.send_email(
-                subject="polymarket_bot: balance error", mail_content=error_message)
+                subject=f"{self.bot_id}: polymarket_bot: balance error", mail_content=error_message)
             raise RuntimeError(error_message)
 
     async def place_orders(self, predictions: dict, paper_trade: bool = True):

@@ -91,7 +91,8 @@ def main():
         data = trade_stats.get_statistics(start_ts=timestamp)
         email_lines += [_tabulate_results(f"{hour}H", data)]
 
-    subject = f"polymarket_bot: stats | {int(datetime.now().timestamp())}"
+    bot_id = Config.BOT_ID
+    subject = f"{bot_id}: polymarket_bot: stats | {int(datetime.now().timestamp())}"
     mail_content = "".join(email_lines)
 
     Emailer.send_email(subject, mail_content=mail_content,
