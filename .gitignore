@@ -214,5 +214,5 @@ market_config.json
 wallet_config.json
 _tmp_*.*
 screenlog.*
-stats_per_hour*.csv
 report_config.json
+stats_per_hour

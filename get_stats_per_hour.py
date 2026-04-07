@@ -1,3 +1,4 @@
+import os
 import argparse
 import csv
 from datetime import datetime, timedelta
@@ -57,7 +58,13 @@ def get_performance(
 def main(ticker: str):
 
     trade_stats = TradeStats()
-    trade_files = trade_stats.get_trade_files()
+    trade_stats_old = TradeStats(
+        trade_files_directory=os.path.join(
+            Config.TRADE_RECORDS_ARCHIVE,
+            Config.TRADE_RECORDS_PROCESSED_DIR
+        )
+    )
+    trade_files = trade_stats.get_trade_files() + trade_stats_old.get_trade_files()
     if not trade_files:
         print(f"No data to process.")
         exit(0)
@@ -86,7 +93,10 @@ def main(ticker: str):
         _row_data = [hour_string] + performance_data
         csv_data.append(_row_data)
 
-    file_csv = f"stats_per_hour-{ticker}.csv"
+    bot_id = Config.BOT_ID
+    file_csv = f"stats_per_hour-{ticker}-{bot_id}.csv"
+    os.makedirs(Config.STATS_DIR, exist_ok=True)
+    file_csv = os.path.join(Config.STATS_DIR, file_csv)
     with open(file_csv, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerows(csv_data)

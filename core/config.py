@@ -36,6 +36,9 @@ class Config:
     TRADE_MAX_RECORDS_UPDATE: int = int(
         os.getenv("TRADE_MAX_RECORDS_UPDATE", 50))
 
+    # Statistics settings
+    STATS_DIR: str = "stats_per_hour"
+
     # REST client settings
     REST_TIMEOUT: float = float(
         os.getenv("REST_TIMEOUT", 3))
