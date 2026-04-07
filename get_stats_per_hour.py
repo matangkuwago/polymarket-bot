@@ -87,8 +87,13 @@ def main(ticker: str):
     for hour in range(0, 24):
         hour_string = f" {hour:02d}"
         performance_data = []
+        date_now = datetime.now().strftime("%Y-%m-%d")
+        hour_now = datetime.now().hour
         for date in dates:
-            performance = get_performance(trade_files, date, hour)
+            if date_now == date and hour >= hour_now:
+                performance = ""
+            else:
+                performance = get_performance(trade_files, date, hour)
             performance_data.append(performance)
         _row_data = [hour_string] + performance_data
         csv_data.append(_row_data)
