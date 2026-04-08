@@ -6,6 +6,7 @@ from glob import glob
 from dataclasses import dataclass, asdict
 from py_clob_client.clob_types import OrderArgs, OrderType
 from py_clob_client.order_builder.constants import BUY
+from py_clob_client.exceptions import PolyApiException
 from core.config import Config
 from core.wallet import Wallet
 from core.polymarket import Market
@@ -176,7 +177,16 @@ class LiveTrader:
         }
 
     def get_order(self, order_id: str):
-        return self.client.get_order(order_id)
+        try:
+            return self.client.get_order(order_id)
+        except PolyApiException as e:
+            self.logger.info(
+                f"PolyApiException encountered when getting order details for order_id {order_id}: {e}")
+            return None
+        except Exception as e:
+            self.logger.info(
+                f"Exception encountered when getting order details for order_id {order_id}: {e}")
+            return None
 
     @staticmethod
     def calculate_fee(price: float, base_fee_bps: int) -> float:
