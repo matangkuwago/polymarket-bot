@@ -23,7 +23,7 @@ def tabulate_wallet_balance(format: str = "html"):
     data = []
     line_border = ["-"*25]*4
     total_data = ["Total", 0, 0, 0]
-    for market_slug in ("btc-updown-5m", "eth-updown-5m", "xrp-updown-5m", "sol-updown-5m"):
+    for market_slug in wallet_manager.get_wallet_ids():
         wallet = WalletManager().get_wallet(market_slug)
         wallet_address = wallet.funder_address
         if wallet_address not in processed_wallets:

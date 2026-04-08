@@ -128,3 +128,6 @@ class WalletManager:
     def get_wallet(self, id: str) -> Wallet:
         self._assert_wallet_id_exists(id)
         return self.wallets[id]
+
+    def get_wallet_ids(self) -> list:
+        return self.wallets.keys()
