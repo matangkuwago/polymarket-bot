@@ -23,7 +23,10 @@ class Polymarket5MinuteBot:
         self.binance_ticker = f"{polymarket_slug_prefix[:3]}USDT".upper()
         self.price_history_binance = {}
         self.price_history_polymarket = {}
-        self.logger = setup_logging(f'{self.polymarket_slug_prefix}.log')
+        self.logger = setup_logging(
+            log_file=f"{self.polymarket_slug_prefix}-{self.bot_id}.log",
+            logger_name=f"{self.bot_id}"
+        )
 
         # get settings
         market_settings = Config.get_market_settings(
