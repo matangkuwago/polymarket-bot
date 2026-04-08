@@ -21,7 +21,7 @@ def tabulate_wallet_balance(format: str = "html"):
     headers = ["Wallet", "Portfolio", "Balance", "Total"]
     processed_wallets = set()
     data = []
-    line_border = ["-"*25]*4
+    line_border = ["-"*11]*4
     total_data = ["Total", 0, 0, 0]
     for wallet_id in wallet_manager.get_wallet_ids():
         wallet = WalletManager().get_wallet(wallet_id)
@@ -35,7 +35,7 @@ def tabulate_wallet_balance(format: str = "html"):
             total_value = portfolio_value + balance_value
             total_data[3] += total_value
 
-            data.append([wallet_address[:15], f"{portfolio_value:.2f}",
+            data.append([wallet_id, f"{portfolio_value:.2f}",
                         f"{balance_value:.2f}", f"{total_value: .2f}"])
             data.append(line_border)
 
