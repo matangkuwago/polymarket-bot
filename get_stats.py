@@ -23,8 +23,8 @@ def tabulate_wallet_balance(format: str = "html"):
     data = []
     line_border = ["-"*25]*4
     total_data = ["Total", 0, 0, 0]
-    for market_slug in wallet_manager.get_wallet_ids():
-        wallet = WalletManager().get_wallet(market_slug)
+    for wallet_id in wallet_manager.get_wallet_ids():
+        wallet = WalletManager().get_wallet(wallet_id)
         wallet_address = wallet.funder_address
         if wallet_address not in processed_wallets:
             processed_wallets.add(wallet_address)

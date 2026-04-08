@@ -42,7 +42,7 @@ class Polymarket5MinuteBot:
 
         if self.do_check_performance:
             self.check_performance()
-        self.wallet = WalletManager().get_wallet(self.polymarket_slug_prefix)
+        self.wallet = WalletManager().get_wallet(self.bot_id)
 
     def check_performance(self):
         trade_stats = TradeStats()

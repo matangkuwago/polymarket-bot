@@ -24,7 +24,8 @@ def main():
     trade_files.sort()
 
     num_records_processed = 0
-    wallet = WalletManager().get_wallet("btc-updown-5m")
+    bot_id = Config.BOT_ID
+    wallet = WalletManager().get_wallet(bot_id)
     trader = LiveTrader(wallet)
     for file in trade_files:
         market_slug = os.path.basename(file).replace(".trade", "")
