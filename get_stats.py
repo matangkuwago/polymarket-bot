@@ -4,6 +4,7 @@ from tabulate import tabulate
 from core.utilities import Emailer, are_bots_on_schedule
 from core.trader import TradeStats
 from core.config import Config
+from core.wallet import WalletManager
 
 
 def _format_table_title(title, format):
@@ -11,6 +12,32 @@ def _format_table_title(title, format):
         return f"<br/><h4>{title}</h4>"
 
     return f"\n\n{title}:\n"
+
+
+def tabulate_wallet_balance(format: str = "html"):
+    wallet_manager = WalletManager()
+
+    table_title = "Wallet Balance"
+    headers = ["Wallet", "Portfolio", "Balance", "Total"]
+    processed_wallets = set()
+    data = []
+    line_border = ["-"*30]*4
+    for market_slug in ("btc-updown-5m", "eth-updown-5m", "xrp-updown-5m", "sol-updown-5m"):
+        wallet = WalletManager().get_wallet(market_slug)
+        wallet_address = wallet.funder_address
+        if wallet_address not in processed_wallets:
+            processed_wallets.add(wallet_address)
+            portfolio_value = wallet.portfolio_value()
+            balance_value = wallet.available_balance()
+            total_value = portfolio_value + balance_value
+            data.append([wallet_address[:15], f"{portfolio_value:.2f}",
+                        f"{balance_value:.2f}", f"{total_value: .2f}"])
+            data.append(line_border)
+
+    return (
+        f"{_format_table_title(table_title, format)}" +
+        tabulate(data, headers=headers, tablefmt=format)
+    )
 
 
 def _tabulate_results(table_title: str, results: dict, format: str = "html"):
@@ -90,6 +117,9 @@ def main():
         timestamp = date_limit.timestamp()
         data = trade_stats.get_statistics(start_ts=timestamp)
         email_lines += [_tabulate_results(f"{hour}H", data)]
+
+    # add wallet balance
+    email_lines += [tabulate_wallet_balance()]
 
     bot_id = Config.BOT_ID
     subject = f"{bot_id}: polymarket_bot: stats | {int(datetime.now().timestamp())}"
