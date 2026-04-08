@@ -21,18 +21,26 @@ def tabulate_wallet_balance(format: str = "html"):
     headers = ["Wallet", "Portfolio", "Balance", "Total"]
     processed_wallets = set()
     data = []
-    line_border = ["-"*30]*4
+    line_border = ["-"*25]*4
+    total_data = ["Total", 0, 0, 0]
     for market_slug in ("btc-updown-5m", "eth-updown-5m", "xrp-updown-5m", "sol-updown-5m"):
         wallet = WalletManager().get_wallet(market_slug)
         wallet_address = wallet.funder_address
         if wallet_address not in processed_wallets:
             processed_wallets.add(wallet_address)
             portfolio_value = wallet.portfolio_value()
+            total_data[1] += portfolio_value
             balance_value = wallet.available_balance()
+            total_data[2] += balance_value
             total_value = portfolio_value + balance_value
+            total_data[3] += total_value
+
             data.append([wallet_address[:15], f"{portfolio_value:.2f}",
                         f"{balance_value:.2f}", f"{total_value: .2f}"])
             data.append(line_border)
+
+    data.append([f"{x:.2f}" if type(x) == float else x for x in total_data])
+    data.append(line_border)
 
     return (
         f"{_format_table_title(table_title, format)}" +
