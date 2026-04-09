@@ -48,7 +48,7 @@ def tabulate_wallet_balance(format: str = "html"):
     )
 
 
-def _tabulate_results(table_title: str, results: dict, format: str = "html"):
+def _tabulate_results(bot_id: str, table_title: str, results: dict, format: str = "html"):
     data = []
     headers = ["Market", "Count", "Wins", "%"]
     results_sorted = sorted(
@@ -60,14 +60,18 @@ def _tabulate_results(table_title: str, results: dict, format: str = "html"):
     matched_wins_total = 0
     line_border = ["-"*11]*4
     for market, result in results_sorted:
+        paper_trade = Config.get_bot_market_setting(
+            bot_id, market, "paper_trade"
+        )
         count = result['record_count']
         wins = result['wins']
         percent = float(wins / count) if count > 0 else -1
         percent_text = f"{percent*100:.2f}%" if percent >= 0 else "N/A"
         count_total += count
         wins_total += wins
+        live_text = " [x]" if not paper_trade else ""
         data.append(line_border)
-        data.append([market[:3], count, wins, percent_text])
+        data.append([market[:3] + live_text, count, wins, percent_text])
 
         if count > 0 and result['matched'] > 0:
             matched = result['matched']
@@ -117,14 +121,14 @@ def main():
     # add wallet balance
     email_lines = [tabulate_wallet_balance()]
 
+    bot_id = Config.BOT_ID
     hours = load_stats_hours()
     for hour in hours:
         date_limit = datetime.now() - timedelta(hours=hour)
         timestamp = date_limit.timestamp()
         data = trade_stats.get_statistics(start_ts=timestamp)
-        email_lines += [_tabulate_results(f"{hour}H", data)]
+        email_lines += [_tabulate_results(bot_id, f"{hour}H", data)]
 
-    bot_id = Config.BOT_ID
     subject = f"{bot_id}: polymarket_bot: stats | {int(datetime.now().timestamp())}"
     mail_content = "".join(email_lines)
 
