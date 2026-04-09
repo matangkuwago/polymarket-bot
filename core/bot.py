@@ -63,7 +63,7 @@ class Polymarket5MinuteBot:
             )
         )
         if settings_filtered_other_bot:
-            self.logger.info(f"conflict(s) found in other bots running {self.polymarket_slug_prefix}: "
+            self.logger.info(f"conflicts found in other bots running {self.polymarket_slug_prefix}: "
                              f"{list(settings_filtered_other_bot.keys())}")
             return False
 
@@ -75,10 +75,12 @@ class Polymarket5MinuteBot:
             )
         )
         if settings_filtered_same_bot:
-            self.logger.info(f"conflict(s) found within {self.bot_id} running other markets: "
+            self.logger.info(f"conflicts found within {self.bot_id} running other markets: "
                              f"{settings_filtered_same_bot}")
             return False
 
+        self.logger.info(f"conflicts not found for {self.bot_id}, "
+                         f"{self.polymarket_slug_prefix}")
         return True
 
     def get_performance(self, hours):
