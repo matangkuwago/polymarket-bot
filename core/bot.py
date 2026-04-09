@@ -42,10 +42,33 @@ class Polymarket5MinuteBot:
         self.threshold_high = market_settings["threshold_high"]
         self.threshold_count = market_settings["threshold_count"]
         self.do_check_performance = market_settings["do_check_performance"]
+        self.do_check_conflict = market_settings["do_check_conflict"]
 
         if self.do_check_performance:
             self.check_performance()
         self.wallet = WalletManager().get_wallet(self.bot_id)
+
+    def no_conflict(self):
+        if not self.do_check_conflict:
+            return True
+
+        all_settings = Config._get_all_market_settings()
+        all_settings_filtered = dict(
+            filter(
+                lambda x: x[0] != self.bot_id and
+                not x[1][self.polymarket_slug_prefix]["paper_trade"],
+                all_settings.items()
+            )
+        )
+
+        if all_settings_filtered:
+            self.logger.info(
+                f"conflict(s) found with {self.bot_id}, {self.polymarket_slug_prefix}: "
+                f"{list(all_settings_filtered.keys())}"
+            )
+            return False
+
+        return True
 
     def check_performance(self):
         trade_stats = TradeStats()
@@ -72,7 +95,7 @@ class Polymarket5MinuteBot:
         wins = sum([data[x]["wins"] for x in data])
         performance = wins/record_count if record_count > 0 else 0
         send_email_notification = False
-        if self.paper_trade and performance <= self.threshold_low:
+        if self.paper_trade and performance <= self.threshold_low and self.no_conflict():
             self.paper_trade = False
             Config.save_bot_market_setting(
                 bot_id,
