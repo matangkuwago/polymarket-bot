@@ -10,6 +10,8 @@ parser = argparse.ArgumentParser(
     description="Tool for generating statistics per hour.")
 parser.add_argument("--start_date", type=str, required=True,
                     help="start date to use to filter the data, format is yyyy-mm-dd e.g. 2026-04-01")
+parser.add_argument("--num_stats_hours", type=int, required=True,
+                    help="number of hours to be considered in the evaluation of statistics")
 args = parser.parse_args()
 
 
@@ -30,7 +32,7 @@ def get_performance(
     trade_files: list,
     date: str,
     hour: int,
-    num_stats_hours: int = Config.PAPER_TRADE_CHECK_PERFORMANCE_HOURS
+    num_stats_hours: int
 ):
     end_date = datetime.strptime(date, "%Y-%m-%d") + timedelta(hours=hour+1)
     end_ts = end_date.timestamp()
@@ -57,6 +59,7 @@ def get_performance(
 
 def main(ticker: str):
 
+    num_stats_hours = args.num_stats_hours
     trade_stats = TradeStats()
     trade_stats_old = TradeStats(
         trade_files_directory=os.path.join(
@@ -93,7 +96,12 @@ def main(ticker: str):
             if date_now == date and hour >= hour_now:
                 performance = ""
             else:
-                performance = get_performance(trade_files, date, hour)
+                performance = get_performance(
+                    trade_files,
+                    date,
+                    hour,
+                    num_stats_hours
+                )
             performance_data.append(performance)
         _row_data = [hour_string] + performance_data
         csv_data.append(_row_data)
