@@ -210,7 +210,7 @@ __marimo__/
 trades
 trades_processed
 .DS_Store
-market_config.json
+bot_config.json
 wallet_config.json
 _tmp_*.*
 screenlog.*
