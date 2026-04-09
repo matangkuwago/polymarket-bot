@@ -118,16 +118,15 @@ def main():
             "Bots are not running so no stats will be sent.")
         exit(0)
 
-    email_lines = []
+    # add wallet balance
+    email_lines = [tabulate_wallet_balance()]
+
     hours = load_stats_hours()
     for hour in hours:
         date_limit = datetime.now() - timedelta(hours=hour)
         timestamp = date_limit.timestamp()
         data = trade_stats.get_statistics(start_ts=timestamp)
         email_lines += [_tabulate_results(f"{hour}H", data)]
-
-    # add wallet balance
-    email_lines += [tabulate_wallet_balance()]
 
     bot_id = Config.BOT_ID
     subject = f"{bot_id}: polymarket_bot: stats | {int(datetime.now().timestamp())}"
