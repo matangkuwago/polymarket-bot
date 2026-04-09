@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta
 from tabulate import tabulate
-from core.utilities import Emailer, are_bots_on_schedule
+from core.utilities import Emailer
 from core.trader import TradeStats
 from core.config import Config
 from core.wallet import WalletManager
@@ -112,10 +112,6 @@ def main():
     trade_stats = TradeStats()
     if not trade_stats.trade_files:
         trade_stats.logger.info("No trade records found.")
-        exit(0)
-    if not are_bots_on_schedule():
-        trade_stats.logger.info(
-            "Bots are not running so no stats will be sent.")
         exit(0)
 
     # add wallet balance

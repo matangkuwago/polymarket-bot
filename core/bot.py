@@ -29,15 +29,15 @@ class Polymarket5MinuteBot:
         )
 
         # get settings
-        market_settings = Config.get_market_settings(
-            self.polymarket_slug_prefix)
+        market_settings = Config.get_bot_market_settings(
+            self.bot_id,
+            self.polymarket_slug_prefix
+        )
         self.logger.info(
             f"market_settings for {self.polymarket_slug_prefix}: {market_settings}")
         self.paper_trade = market_settings["paper_trade"]
         self.entry_price = market_settings["entry_price"]
         self.order_size = market_settings["order_size"]
-        self.start_hour = market_settings["start_hour"]
-        self.end_hour = market_settings["end_hour"]
         self.threshold_low = market_settings["threshold_low"]
         self.threshold_high = market_settings["threshold_high"]
         self.threshold_count = market_settings["threshold_count"]
@@ -74,7 +74,8 @@ class Polymarket5MinuteBot:
         send_email_notification = False
         if self.paper_trade and performance <= self.threshold_low:
             self.paper_trade = False
-            Config.save_setting(
+            Config.save_bot_market_setting(
+                bot_id,
                 self.polymarket_slug_prefix,
                 "paper_trade",
                 self.paper_trade
@@ -88,7 +89,8 @@ class Polymarket5MinuteBot:
             send_email_notification = True
         elif not self.paper_trade and performance >= self.threshold_high:
             self.paper_trade = True
-            Config.save_setting(
+            Config.save_bot_market_setting(
+                bot_id,
                 self.polymarket_slug_prefix,
                 "paper_trade",
                 self.paper_trade
@@ -114,21 +116,7 @@ class Polymarket5MinuteBot:
                 mail_content=mail_content
             )
 
-    def are_we_on_schedule(self):
-        current_hour = datetime.now().hour
-        on_schedule = self.start_hour <= current_hour and current_hour < self.end_hour
-        if not on_schedule:
-            self.logger.info(
-                f"{self.polymarket_slug_prefix} is out of schedule: "
-                f"start_hour {self.start_hour}, "
-                f"end_hour {self.end_hour}"
-            )
-        return on_schedule
-
     async def run(self):
-        if not self.are_we_on_schedule():
-            return
-
         start_time = time.time()
         self.logger.info(
             f"polymarket_bot run started | {self.polymarket_slug_prefix}")
@@ -142,41 +130,6 @@ class Polymarket5MinuteBot:
             f"polymarket_bot run ended | {self.polymarket_slug_prefix}")
         self.logger.info(
             f"Total execution time: {end_time - start_time} seconds")
-
-    def save_override_settings_online(self):
-
-        csv_url = Config.MARKET_SETTINGS_OVERRIDE_URL
-        self.logger.info(f"Getting market settings online: {csv_url}")
-        response = requests.get(url=csv_url)
-        csv_content_response = response.content.decode('utf-8')
-        csv_contents = csv.reader(io.StringIO(csv_content_response))
-
-        online_settings = {}
-
-        next(csv_contents)
-        for line in csv_contents:
-            market = line[0]
-            online_settings[market] = dict(Config.MARKET_SETTINGS_DEFAULT)
-            online_settings[market]["paper_trade"] = str(
-                line[1]).lower() == "true"
-            online_settings[market]["entry_price"] = float(line[2])
-            online_settings[market]["order_size"] = float(line[3])
-            online_settings[market]["start_hour"] = int(line[4])
-            online_settings[market]["end_hour"] = int(line[5])
-
-        if online_settings:
-            self.logger.debug(
-                f"Online market settings retrieved online: {json.dumps(online_settings, indent=4)}")
-            local_market_settings = Config._get_all_market_settings()
-            for market in online_settings.keys():
-                if market not in local_market_settings:
-                    local_market_settings[market] = dict(
-                        online_settings[market])
-                else:
-                    local_market_settings[market] = local_market_settings[market] | online_settings[market]
-            Config._save_all_market_settings(local_market_settings)
-            self.logger.debug(
-                f"Saved market settings: {json.dumps(local_market_settings, indent=4)}")
 
     async def load_binance_price_history(self):
         index_timestamp = 0

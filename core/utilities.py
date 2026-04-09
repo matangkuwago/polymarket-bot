@@ -82,11 +82,3 @@ def setup_logging(log_file, logger_name: str = Config.LOGGER_NAME, log_level=Con
     logger.addHandler(file_handler)
 
     return logger
-
-
-def are_bots_on_schedule():
-    end_hour_allowance = 1
-    current_hour = datetime.now().hour
-    market_settings = Config._get_all_market_settings()
-    return any([x["start_hour"] <= current_hour and current_hour <
-                (x["end_hour"] + end_hour_allowance) for x in market_settings.values()])

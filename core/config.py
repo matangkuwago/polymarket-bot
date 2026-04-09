@@ -69,34 +69,25 @@ class Config:
         "EMAIL_LIMIT_ORDER_INFO", "false").lower() == "true"
 
     # Market settings
-    MARKET_SETTINGS_OVERRIDE_URL = os.getenv(
-        "MARKET_SETTINGS_OVERRIDE_URL", "")
-    MARKET_SETTINGS_FILE = os.getenv(
-        "MARKET_SETTINGS_FILE", "market_config.json")
-    MARKET_SETTINGS_DEFAULT = {
-        "paper_trade": True,
-        "entry_price": 0.49,
-        "order_size": 5,
-        "start_hour": 5,
-        "end_hour": 18,
-    }
+    BOT_SETTINGS_FILE = os.getenv(
+        "BOT_SETTINGS_FILE", "bot_config.json")
     PAPER_TRADE_CHECK_PERFORMANCE_HOURS: int = int(
         os.getenv("PAPER_TRADE_CHECK_PERFORMANCE_HOURS", 24))
 
     @classmethod
-    def get_setting(cls, market: str, setting: str, settings_file: str = None):
-        data = cls.get_market_settings(market, settings_file)
+    def get_bot_market_setting(cls, bot_id: str, market: str, setting: str, settings_file: str = None):
+        data = cls.get_bot_market_settings(bot_id, market, settings_file)
         return data[setting]
 
     @classmethod
-    def save_setting(cls, market: str, setting: str, value, settings_file: str = None):
-        data = cls.get_market_settings(market, settings_file)
+    def save_bot_market_setting(cls, bot_id: str, market: str, setting: str, value, settings_file: str = None):
+        data = cls.get_bot_market_settings(bot_id, market, settings_file)
         data[setting] = value
-        cls.save_market_settings(market, data)
+        cls.save_bot_market_settings(bot_id, market, data)
 
     @classmethod
     def _get_all_market_settings(cls, settings_file: str = None):
-        json_file = cls.MARKET_SETTINGS_FILE if settings_file is None else settings_file
+        json_file = cls.BOT_SETTINGS_FILE if settings_file is None else settings_file
         try:
             with open(json_file, 'r') as f:
                 data = json.load(f)
@@ -107,31 +98,30 @@ class Config:
             return {}
 
     @classmethod
-    def get_market_settings(cls, market: str, settings_file: str = None):
-        json_file = cls.MARKET_SETTINGS_FILE if settings_file is None else settings_file
-        try:
-            with open(json_file, 'r') as f:
-                data = json.load(f)
-            if market in data:
-                return data[market]
-            return dict(cls.MARKET_SETTINGS_DEFAULT)
-        except FileNotFoundError as e:
-            return dict(cls.MARKET_SETTINGS_DEFAULT)
-        except json.JSONDecodeError:
-            return dict(cls.MARKET_SETTINGS_DEFAULT)
+    def get_bot_market_settings(cls, bot_id: str, market: str, settings_file: str = None):
+        json_file = cls.BOT_SETTINGS_FILE if settings_file is None else settings_file
+        with open(json_file, 'r') as f:
+            data = json.load(f)
+        if bot_id in data and market in data[bot_id]:
+            return data[bot_id][market]
+
+        raise RuntimeError(
+            f"Settings for {bot_id}: {market} not found in {json_file}!")
 
     @classmethod
     def _save_all_market_settings(cls, settings: dict, settings_file: str = None):
-        json_file = cls.MARKET_SETTINGS_FILE if settings_file is None else settings_file
+        json_file = cls.BOT_SETTINGS_FILE if settings_file is None else settings_file
         with open(json_file, 'w') as f:
             json.dump(settings, f, indent=4)
 
     @classmethod
-    def save_market_settings(cls, market: str, settings: dict, settings_file: str = None):
-        json_file = cls.MARKET_SETTINGS_FILE if settings_file is None else settings_file
+    def save_bot_market_settings(cls, bot_id: str, market: str, settings: dict, settings_file: str = None):
+        json_file = cls.BOT_SETTINGS_FILE if settings_file is None else settings_file
         all_market_settings = cls._get_all_market_settings(json_file)
-        market_settings = cls.MARKET_SETTINGS_DEFAULT | settings
-        all_market_settings[market] = market_settings
+        if bot_id not in all_market_settings or market not in all_market_settings[bot_id]:
+            raise RuntimeError(
+                f"Settings for {bot_id}: {market} not found in {json_file}!")
+        all_market_settings[bot_id][market] = settings
         cls._save_all_market_settings(all_market_settings)
 
     # Reporting settings
