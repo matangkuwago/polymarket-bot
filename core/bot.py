@@ -53,19 +53,30 @@ class Polymarket5MinuteBot:
             return True
 
         all_settings = Config._get_all_market_settings()
-        all_settings_filtered = dict(
+
+        # check if other bots are running the same market
+        settings_filtered_other_bot = dict(
             filter(
                 lambda x: x[0] != self.bot_id and
                 not x[1][self.polymarket_slug_prefix]["paper_trade"],
                 all_settings.items()
             )
         )
+        if settings_filtered_other_bot:
+            self.logger.info(f"conflict(s) found in other bots running {self.polymarket_slug_prefix}: "
+                             f"{list(settings_filtered_other_bot.keys())}")
+            return False
 
-        if all_settings_filtered:
-            self.logger.info(
-                f"conflict(s) found with {self.bot_id}, {self.polymarket_slug_prefix}: "
-                f"{list(all_settings_filtered.keys())}"
+        # check if our bot is running a market
+        settings_filtered_same_bot = list(
+            filter(
+                lambda x: not all_settings[self.bot_id][x]["paper_trade"],
+                all_settings[self.bot_id]
             )
+        )
+        if settings_filtered_same_bot:
+            self.logger.info(f"conflict(s) found within {self.bot_id} running other markets: "
+                             f"{settings_filtered_same_bot}")
             return False
 
         return True
