@@ -70,21 +70,28 @@ class Polymarket5MinuteBot:
 
         return True
 
-    def check_performance(self):
+    def get_performance(self, hours):
         trade_stats = TradeStats()
-        date_limit = datetime.now() - timedelta(
-            hours=Config.PAPER_TRADE_CHECK_PERFORMANCE_HOURS)
+        date_limit = (datetime.now() -
+                      timedelta(hours=hours))
         timestamp = date_limit.timestamp()
         data = trade_stats.get_statistics(start_ts=timestamp)
-        if not data:
-            self.logger.info("check_performance: no data was retrieved")
-            return
         data = dict(filter(
             lambda x: x[0] == self.polymarket_slug_prefix,
             data.items()
-        ))
+        )) if data else None
+
+        if not data:
+            return (0, 0)
 
         record_count = sum([data[x]["record_count"] for x in data])
+        wins = sum([data[x]["wins"] for x in data])
+        performance = wins/record_count if record_count > 0 else 0
+        return (record_count, performance)
+
+    def check_performance(self):
+        hours = Config.PAPER_TRADE_CHECK_PERFORMANCE_HOURS
+        record_count, performance = self.get_performance(hours)
         if record_count < self.threshold_count:
             self.logger.info(
                 f"check_performance: record_count ({record_count}) "
@@ -92,8 +99,6 @@ class Polymarket5MinuteBot:
             )
             return
 
-        wins = sum([data[x]["wins"] for x in data])
-        performance = wins/record_count if record_count > 0 else 0
         send_email_notification = False
         if self.paper_trade and performance <= self.threshold_low and self.no_conflict():
             self.paper_trade = False
@@ -125,6 +130,14 @@ class Polymarket5MinuteBot:
             )
             self.logger.info(log_message)
             send_email_notification = True
+        else:
+            log_message = (
+                f"check_performance: no change: paper_trade {self.paper_trade}, "
+                f"record_count: {record_count:.2f}, "
+                f"performance: {performance:.2f}, "
+                f"threshold {self.threshold_high:.2f}"
+            )
+            self.logger.info(log_message)
 
         if send_email_notification:
             timestamp = datetime.now().timestamp()
