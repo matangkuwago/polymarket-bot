@@ -71,8 +71,6 @@ class Config:
     # Market settings
     BOT_SETTINGS_FILE = os.getenv(
         "BOT_SETTINGS_FILE", "bot_config.json")
-    PAPER_TRADE_CHECK_PERFORMANCE_HOURS: int = int(
-        os.getenv("PAPER_TRADE_CHECK_PERFORMANCE_HOURS", 24))
 
     @classmethod
     def get_bot_market_setting(cls, bot_id: str, market: str, setting: str, settings_file: str = None):

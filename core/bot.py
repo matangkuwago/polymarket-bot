@@ -43,6 +43,7 @@ class Polymarket5MinuteBot:
         self.threshold_count = market_settings["threshold_count"]
         self.do_check_performance = market_settings["do_check_performance"]
         self.do_check_conflict = market_settings["do_check_conflict"]
+        self.threshold_hours = market_settings["threshold_hours"]
 
         if self.do_check_performance:
             self.check_performance()
@@ -103,7 +104,7 @@ class Polymarket5MinuteBot:
         return (record_count, performance)
 
     def check_performance(self):
-        hours = Config.PAPER_TRADE_CHECK_PERFORMANCE_HOURS
+        hours = self.threshold_hours
         record_count, performance = self.get_performance(hours)
         if record_count < self.threshold_count:
             self.logger.info(
