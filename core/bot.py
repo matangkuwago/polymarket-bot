@@ -116,7 +116,7 @@ class Polymarket5MinuteBot:
         if self.paper_trade and performance <= self.threshold_low and self.no_conflict():
             self.paper_trade = False
             Config.save_bot_market_setting(
-                bot_id,
+                self.bot_id,
                 self.polymarket_slug_prefix,
                 "paper_trade",
                 self.paper_trade
@@ -131,7 +131,7 @@ class Polymarket5MinuteBot:
         elif not self.paper_trade and performance >= self.threshold_high:
             self.paper_trade = True
             Config.save_bot_market_setting(
-                bot_id,
+                self.bot_id,
                 self.polymarket_slug_prefix,
                 "paper_trade",
                 self.paper_trade
