@@ -149,7 +149,9 @@ class Polymarket5MinuteBot:
                 f"check_performance: no change: paper_trade {self.paper_trade}, "
                 f"record_count: {record_count:.2f}, "
                 f"performance: {performance:.2f}, "
-                f"threshold {self.threshold_high:.2f}"
+                f"threshold_hours {self.threshold_hours}, "
+                f"threshold_low {self.threshold_low:.2f}, "
+                f"threshold_high {self.threshold_high:.2f}"
             )
             self.logger.info(log_message)
 
