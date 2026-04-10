@@ -25,7 +25,7 @@ class Polymarket5MinuteBot:
         self.price_history_polymarket = {}
         self.logger = setup_logging(
             log_file=f"{self.polymarket_slug_prefix}-{self.bot_id}.log",
-            logger_name=f"{self.bot_id}"
+            logger_name=f"{self.polymarket_slug_prefix}-{self.bot_id}"
         )
 
         # get settings
@@ -48,6 +48,11 @@ class Polymarket5MinuteBot:
         if self.do_check_performance:
             self.check_performance()
         self.wallet = WalletManager().get_wallet(self.bot_id)
+
+    def __del__(self):
+        for handler in self.logger.handlers[:]:
+            handler.close()
+            self.logger.removeHandler(handler)
 
     def no_conflict(self):
         if not self.do_check_conflict:
