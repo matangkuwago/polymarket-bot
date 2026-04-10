@@ -295,7 +295,7 @@ class LiveTrader:
 
 class TradeStats:
 
-    def __init__(self, trade_files_directory: str = Config.TRADE_RECORDS_PROCESSED_DIR):
+    def __init__(self, start_ts: int = None, end_ts: int = None, trade_files_directory: str = Config.TRADE_RECORDS_PROCESSED_DIR):
         self.trade_files_directory = trade_files_directory
         self.trade_files = []
         self.logger = setup_logging(
@@ -308,11 +308,20 @@ class TradeStats:
         for file in trade_files:
             market_slug = os.path.basename(file).replace(".trade", "")
             timestamp = int(market_slug[-10:])
+            if start_ts and start_ts > timestamp:
+                continue
+            if end_ts and timestamp > end_ts:
+                continue
             trade = Trade.load(
                 market_slug, trade_files_directory=self.trade_files_directory)
             if not trade:
                 continue
             self.trade_files.append({"timestamp": timestamp, "trade": trade})
+
+    def __del__(self):
+        for handler in self.logger.handlers[:]:
+            handler.close()
+            self.logger.removeHandler(handler)
 
     def get_trade_files(self):
         return self.trade_files
