@@ -1,4 +1,5 @@
 import logging
+import json
 import smtplib
 import sys
 from os.path import basename
@@ -82,3 +83,19 @@ def setup_logging(log_file, logger_name: str = Config.LOGGER_NAME, log_level=Con
     logger.addHandler(file_handler)
 
     return logger
+
+
+def json_file_read(json_file: str, ignore_errors: bool = True) -> dict:
+    try:
+        with open(json_file, 'r') as f:
+            data = json.load(f)
+        return data
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        if ignore_errors:
+            return {}
+        raise e
+
+
+def json_file_save(json_data: dict, json_file: str):
+    with open(json_file, 'w') as f:
+        json.dump(json_data, f, indent=4)
