@@ -216,3 +216,4 @@ _tmp_*.*
 screenlog.*
 report_config.json
 stats_per_hour
+simulation_config.json

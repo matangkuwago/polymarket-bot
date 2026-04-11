@@ -2,7 +2,7 @@ import argparse
 import os
 import json
 from datetime import datetime, timedelta
-from core.utilities import json_file_read
+from core.utilities import json_file_read, setup_logging
 from core.trader import TradeStats
 from core.config import Config
 
@@ -52,7 +52,7 @@ def get_performance(
     return performance
 
 
-def check_performance(trade, config):
+def check_performance(trade, config, logger):
     timestamp = trade.timestamp
     date = datetime.fromtimestamp(timestamp)
     market_slug = trade.market_slug[:-11]
@@ -69,14 +69,13 @@ def check_performance(trade, config):
         return
 
     performance = get_performance(market_slug, timestamp, threshold_hours)
-    # print(f"{date}: paper_trade {paper_trade}, performance: {performance}, threshold_low {threshold_low}, {threshold_high}")
     if paper_trade and performance <= threshold_low:
         config["bot_config"][market_slug]["paper_trade"] = False
-        print(
+        logger.debug(
             f"live_trade turned ON for {market_slug}: {performance:.2f} vs {threshold_low:.2f}")
     elif not paper_trade and performance >= threshold_high:
         config["bot_config"][market_slug]["paper_trade"] = True
-        print(
+        logger.debug(
             f"live_trade turned OFF for {market_slug}: {performance:.2f} vs {threshold_high:.2f}")
 
     return
@@ -95,11 +94,20 @@ def main():
     end_ts = datetime.strptime(config["end_date"], "%Y-%m-%d").timestamp()
 
     trade_files = get_trade_files(start_ts, end_ts)
-    start_date = datetime.fromtimestamp(trade_files[0]["timestamp"])
-    end_date = datetime.fromtimestamp(trade_files[-1]["timestamp"])
 
     if config["current_balance"] is None:
         config["current_balance"] = config["initial_balance"]
+
+    # initialize paper_trade to True
+    for market_setting in config["bot_config"].values():
+        market_setting["paper_trade"] = True
+
+
+    logger = setup_logging(log_file="simulation.log", logger_name="simulation")
+    initial_balance = config["initial_balance"]
+    start_date = config["start_date"]
+    end_date = config["end_date"]
+    logger.info(f"Simulation started: date {start_date} to {end_date}, initial_balance {initial_balance:.0f}")
 
     num_wins = 0
     num_trades = 0
@@ -114,7 +122,7 @@ def main():
             config["bot_config"][market_slug]["record_count"] = 0
 
         config["bot_config"][market_slug]["record_count"] += 1
-        check_performance(trade, config)
+        check_performance(trade, config, logger)
         paper_trade = config["bot_config"][market_slug]["paper_trade"]
 
         if not paper_trade:
@@ -128,15 +136,15 @@ def main():
                 outcome_text = "LOST"
                 config["current_balance"] -= trade_value
             current_balance = config["current_balance"]
-            print(
+            logger.debug(
                 f"Trade {timestamp}: {outcome_text}: "
                 f"current_balance: {current_balance}"
             )
 
     current_balance = config["current_balance"]
     performance = f"{(num_wins/num_trades)*100:.2f}%" if num_trades > 0 else "N/A"
-    print(
-        f"Final Outcome: performance {performance}, current_balance: {current_balance}")
+    logger.info(
+        f"Final Outcome: performance {performance}, current_balance: {current_balance:.0f}")
 
 
 if __name__ == "__main__":
