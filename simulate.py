@@ -23,6 +23,7 @@ def get_trade_files(start_ts, end_ts, market_slug: str = None):
             lambda x: market_slug in x["trade"].market_slug,
             trade_files
         ))
+    sorted_data = sorted(trade_files, key=lambda x: x['timestamp'])
     return trade_files
 
 
