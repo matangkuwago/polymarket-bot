@@ -77,6 +77,18 @@ def _tabulate_results(bot_id: str, hour: int, results: dict, format: str = "html
         data.append(line_border)
         data.append([market[:3] + live_text, count, wins, percent_text])
 
+        # check live trade candidate
+        threshold_low = Config.get_bot_market_setting(
+            bot_id, market, "threshold_low")
+        if (paper_trade and
+                hour == threshold_hours and
+                percent <= threshold_low):
+            subject = f"{bot_id}: polymarket_bot: {market}: live_trade_candidate | {int(datetime.now().timestamp())}"
+            mail_content = (f"performance: {percent:.2f}, "
+                            f"threshold_low: {threshold_low:.2f}, "
+                            f"threshold_hours: {threshold_hours}")
+            Emailer.send_email(subject, mail_content)
+
         if count > 0 and result['matched'] > 0:
             matched = result['matched']
             matched_wins = result['matched_wins']
