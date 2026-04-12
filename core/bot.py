@@ -42,7 +42,7 @@ class Polymarket5MinuteBot:
         self.threshold_high = market_settings["threshold_high"]
         self.threshold_count = market_settings["threshold_count"]
         self.do_check_performance = market_settings["do_check_performance"]
-        self.do_check_conflict = market_settings["do_check_conflict"]
+        self.max_live_markets = market_settings["max_live_markets"]
         self.threshold_hours = market_settings["threshold_hours"]
 
         if self.do_check_performance:
@@ -54,39 +54,27 @@ class Polymarket5MinuteBot:
             handler.close()
             self.logger.removeHandler(handler)
 
-    def no_conflict(self):
-        if not self.do_check_conflict:
-            return True
+    def check_max_live_markets(self):
+        if self.max_live_markets <= 0:
+            return False
 
         all_settings = Config._get_all_market_settings()
 
-        # check if other bots are running the same market
-        settings_filtered_other_bot = dict(
-            filter(
-                lambda x: x[0] != self.bot_id and
-                not x[1][self.polymarket_slug_prefix]["paper_trade"],
-                all_settings.items()
-            )
-        )
-        if settings_filtered_other_bot:
-            self.logger.info(f"conflicts found in other bots running {self.polymarket_slug_prefix}: "
-                             f"{list(settings_filtered_other_bot.keys())}")
-            return False
-
-        # check if our bot is running a market
-        settings_filtered_same_bot = list(
+        # check how many live markets are running
+        settings_filtered = list(
             filter(
                 lambda x: not all_settings[self.bot_id][x]["paper_trade"],
                 all_settings[self.bot_id]
             )
         )
-        if settings_filtered_same_bot:
-            self.logger.info(f"conflicts found within {self.bot_id} running other markets: "
-                             f"{settings_filtered_same_bot}")
+        num_live_markets = len(settings_filtered)
+        if num_live_markets >= self.max_live_markets:
+            self.logger.info(f"[{self.max_live_markets}] max_live_markets reached for {self.bot_id}: "
+                             f"{settings_filtered}")
             return False
 
-        self.logger.info(f"conflicts not found for {self.bot_id}, "
-                         f"{self.polymarket_slug_prefix}")
+        self.logger.info(f"[{self.max_live_markets}] max_live_markets, "
+                         f"bot {self.bot_id} is underutilized")
         return True
 
     def get_performance(self, hours):
@@ -119,7 +107,9 @@ class Polymarket5MinuteBot:
             return
 
         send_email_notification = False
-        if self.paper_trade and performance <= self.threshold_low and self.no_conflict():
+        if (self.paper_trade and
+                performance <= self.threshold_low and
+                self.check_max_live_markets()):
             self.paper_trade = False
             Config.save_bot_market_setting(
                 self.bot_id,
