@@ -183,10 +183,12 @@ class Polymarket5MinuteBot:
         index_closing_price = 4
 
         client = await AsyncClient.create()
+        minutes = (Config.MINIMUM_NUM_PRICE_HISTORY +
+                   Config.PRICE_HISTORY_BUFFER)*5
         async for kline in await client.get_historical_klines_generator(
             self.binance_ticker,
             AsyncClient.KLINE_INTERVAL_5MINUTE,
-            "2.5 hours ago"
+            f"{minutes} minutes ago"
         ):
             timestamp = int(kline[index_timestamp]/1000)
             price = float(kline[index_closing_price])
@@ -199,7 +201,8 @@ class Polymarket5MinuteBot:
 
     async def load_polymarket_price_history(self):
         market_interval_minutes = 5
-        num_markets_to_fetch = 30
+        num_markets_to_fetch = (Config.MINIMUM_NUM_PRICE_HISTORY +
+                                Config.PRICE_HISTORY_BUFFER)
 
         client = PolymarketClient(
             market_slug_prefix=self.polymarket_slug_prefix)

@@ -47,6 +47,8 @@ class Config:
     # Prediction settings
     MINIMUM_NUM_PRICE_HISTORY: int = int(
         os.getenv("MINIMUM_NUM_PRICE_HISTORY", 23))
+    PRICE_HISTORY_BUFFER: int = int(
+        os.getenv("PRICE_HISTORY_BUFFER", 10))
     NUM_PREDICTIONS = int(os.getenv("NUM_PREDICTIONS", 5))
     PREDICTION_API_ENDPOINT = os.getenv("PREDICTION_API_ENDPOINT", "")
     PREDICTION_API_RESULTS_ENDPOINT = os.getenv(
